@@ -13,10 +13,10 @@ public class Usuario {
     private String senha;
     @ManyToOne
     @JoinColumn(name = "id_setor")
-    private Setor idSetor;
+    private Setor setor;
     @ManyToOne
     @JoinColumn(name = "id_cargo")
-    private Cargo idCargo;
+    private Cargo cargo;
     private boolean ativo;
     public Usuario() {}
 
@@ -52,20 +52,20 @@ public class Usuario {
         this.senha = senha;
     }
 
-    public Setor getIdSetor() {
-        return idSetor;
+    public Setor getSetor() {
+        return setor;
     }
 
-    public void setIdSetor(Setor idSetor) {
-        this.idSetor = idSetor;
+    public void setSetor(Setor setor) {
+        this.setor = setor;
     }
 
-    public Cargo getIdCargo() {
-        return idCargo;
+    public Cargo getCargo() {
+        return cargo;
     }
 
-    public void setIdCargo(Cargo idCargo) {
-        this.idCargo = idCargo;
+    public void setCargo(Cargo cargo) {
+        this.cargo = cargo;
     }
 
     public boolean isAtivo() {

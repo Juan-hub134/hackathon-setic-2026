@@ -1,11 +1,9 @@
 package br.com.hackathon.setic.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 @Entity
+@Table(name = "setor")
 public class Setor {
     @Id
     @GeneratedValue(strategy= GenerationType.IDENTITY)
