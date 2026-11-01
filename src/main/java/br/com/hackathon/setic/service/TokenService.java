@@ -21,7 +21,7 @@ public class TokenService {
         Algorithm algorithm = Algorithm.RSA256(publicKey,privateKey);
         return JWT.create()
                 .withSubject(String.valueOf(usuario.getIdUsuario()))
-                .withClaim("cargo", usuario.getCargo().getCargo())
+                .withClaim("scope", usuario.getCargo().getCargo())
                 .withClaim("setor", usuario.getSetor().getUnidade())
                 .withExpiresAt(Instant.now().plus(7, ChronoUnit.DAYS))
                 .sign(algorithm);
