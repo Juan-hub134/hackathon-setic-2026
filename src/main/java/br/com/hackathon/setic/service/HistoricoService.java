@@ -45,4 +45,24 @@ public class HistoricoService {
         );
         historicoRepository.save(historico);
     }
+    public void voltarAoCargoAntigo(Usuario gestor, Usuario funcionario, Long cargoAnterior, Long cargoNovo ){
+        Historico historico = new Historico();
+        historico.setUsuario(gestor);
+        historico.setIdRegistro(funcionario.getIdUsuario());
+        historico.setTabela("usuario");
+        historico.setOperacao("rollback");
+        historico.setAlteradoEm(LocalDateTime.now());
+        historico.setCamposAlterados("id_cargo");
+        historico.setAntes(
+                objectMapper.valueToTree(
+                        Map.of("id_cargo", cargoAnterior)
+                )
+        );
+        historico.setDepois(
+                objectMapper.valueToTree(
+                        Map.of("id_cargo", cargoNovo)
+                )
+        );
+        historicoRepository.save(historico);
+    }
 }

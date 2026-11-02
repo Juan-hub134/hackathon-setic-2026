@@ -14,4 +14,9 @@ public interface HistoricoRepository extends JpaRepository<Historico,Long> {
             Long idRegistro,
             List<String> operacoes
     );
+    Optional<Historico> findFirstByTabelaAndIdRegistroAndOperacaoOrderByIdDesc(
+            String tabela,
+            long idRegistro,
+            String operacao
+    );
 }

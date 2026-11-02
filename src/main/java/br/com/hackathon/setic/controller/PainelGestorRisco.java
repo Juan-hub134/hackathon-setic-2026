@@ -23,9 +23,15 @@ public class PainelGestorRisco {
     }
    //servidor ou ascf
    @PostMapping("/gestor/indicar/{id}")
-  public ResponseEntity<?> indicarSetor(@AuthenticationPrincipal Jwt jwt, @PathVariable long id){
+  public ResponseEntity<String> indicarSetorPrr(@AuthenticationPrincipal Jwt jwt, @PathVariable long id){
         String sub = jwt.getSubject();
         painelGestorRiscoService.indicar(id, sub);
         return  ResponseEntity.ok("cargo alterado com sucesso!");
+   }
+   @PostMapping("/gestor/remover/indicacao/{id}")
+    public ResponseEntity<String> removerIndicaoPrr(@AuthenticationPrincipal Jwt jwt, @PathVariable long id){
+        String sub = jwt.getSubject();
+        painelGestorRiscoService.rollbackIndicacao(id, sub);
+        return ResponseEntity.ok("cargo removido com sucesso!");
    }
 }

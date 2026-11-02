@@ -9,7 +9,6 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 public class ConfigSecurity {
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
@@ -17,6 +16,7 @@ public class ConfigSecurity {
                         .requestMatchers("/api/v1/login").permitAll()
                         .requestMatchers("/api/v1/gestor/setor/lista").hasAuthority("SCOPE_GESTOR_RISCO")
                         .requestMatchers("/api/v1/gestor/indicar/{id}").hasAuthority("SCOPE_GESTOR_RISCO")
+                        .requestMatchers("/api/v1/gestor/remover/indicacao/{id}").hasAuthority("SCOPE_GESTOR_RISCO")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 ->oauth2
                         .jwt(jwt -> {}));
