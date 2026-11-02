@@ -14,5 +14,5 @@ import java.util.Optional;
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     Optional<Usuario> findByEmail(String email);
     @Query(" SELECT u FROM Usuario u WHERE u.setor.idSetor = :idSetor")
-    List<Usuario> fltrarPorSetorDoGestor(long idSetor);
+    List<Usuario> fltrarPorSetorDoGestor(long idSetor);// mas tmb pode ser usado para qualquer cargo
 }

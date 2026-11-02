@@ -1,13 +1,14 @@
 package br.com.hackathon.setic.controller;
 
 import br.com.hackathon.setic.dto.request.RiscoRequestDto;
-import br.com.hackathon.setic.model.Risco;
-import br.com.hackathon.setic.model.Usuario;
+import br.com.hackathon.setic.dto.response.RiscoResponseDto;
 import br.com.hackathon.setic.service.RiscoService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -21,5 +22,9 @@ public class RiscoController {
         String sub = jwt.getSubject();
         riscoService.registrarRisco(dto,sub);
         return ResponseEntity.ok("Risco registrado com sucesso");
+    }
+    @GetMapping("/riscos")//filtrada pelo setor
+    public ResponseEntity<List<RiscoResponseDto>> listarRiscos(@AuthenticationPrincipal Jwt jwt){
+
     }
 }

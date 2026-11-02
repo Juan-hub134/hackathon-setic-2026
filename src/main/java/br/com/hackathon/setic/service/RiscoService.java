@@ -1,11 +1,15 @@
 package br.com.hackathon.setic.service;
 
 import br.com.hackathon.setic.dto.request.RiscoRequestDto;
+import br.com.hackathon.setic.dto.response.RiscoResponseDto;
 import br.com.hackathon.setic.model.*;
 import br.com.hackathon.setic.repository.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class RiscoService {
@@ -51,5 +55,15 @@ public class RiscoService {
         risco.setNivel(nivel);
         riscoRepository.save(risco);
         historicoService.registrarRiscoNovo(usuario, risco);
+    }
+    public List<RiscoResponseDto> listarRiscos(String sub){
+        long idGestor = Long.parseLong(sub);
+        Usuario usuario = usuarioRepository.findById(idGestor).get();
+        String setor = usuario.getSetor().getUnidade();
+        Optional<Risco> riscoOptional = riscoRepository.findById(usuario.getIdUsuario());
+        if (riscoOptional.isPresent()) {
+            Risco risco  = riscoOptional.get();
+        }
+
     }
 }
