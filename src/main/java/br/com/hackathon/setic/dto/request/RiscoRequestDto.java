@@ -5,6 +5,7 @@ public record RiscoRequestDto(long idCategoria,
                               String evento,
                               String impactoTxt,
                               String objtivo,
+                              String descricao,
                               long idProbabilidade,
                               long idImpacto,
                               int horizonteMeses) {

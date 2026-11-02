@@ -27,11 +27,19 @@ public class Risco {
     @ManyToOne
     @JoinColumn(name = "id_impacto")
     private EscalaImpacto escalaImpacto;
-    private int nivel;
+    private long nivel;
     private int horizonteMeses;
     private String criadoPor;
     private LocalDateTime criadoEm;
     private LocalDateTime atualizadoEm;
+
+    public EscalaImpacto getEscalaImpacto() {
+        return escalaImpacto;
+    }
+
+    public void setEscalaImpacto(EscalaImpacto escalaImpacto) {
+        this.escalaImpacto = escalaImpacto;
+    }
 
     public long getIdRisco() {
         return idRisco;
@@ -105,11 +113,11 @@ public class Risco {
         this.escalaProbabilidade = escalaProbabilidade;
     }
 
-    public int getNivel() {
+    public long getNivel() {
         return nivel;
     }
 
-    public void setNivel(int nivel) {
+    public void setNivel(long nivel) {
         this.nivel = nivel;
     }
 

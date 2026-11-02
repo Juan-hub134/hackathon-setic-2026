@@ -5,5 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface EscalaImpactoRepository extends JpaRepository<EscalaImpacto, Integer> {
+public interface EscalaImpactoRepository extends JpaRepository<EscalaImpacto, Long> {
 }
