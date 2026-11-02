@@ -22,7 +22,7 @@ public class PainelGestorRisco {
             return painelGestorRiscoService.listaDeFuncionariosDoSetorDoGestor(sub);
     }
    //servidor ou ascf
-   @PostMapping("/gestor/indicar{id}")
+   @PostMapping("/gestor/indicar/{id}")
   public ResponseEntity<?> indicarSetor(@AuthenticationPrincipal Jwt jwt, @PathVariable long id){
         String sub = jwt.getSubject();
         painelGestorRiscoService.indicar(id, sub);
