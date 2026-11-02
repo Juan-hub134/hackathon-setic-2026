@@ -16,6 +16,7 @@ public class ConfigSecurity {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/login").permitAll()
                         .requestMatchers("/api/v1/gestor/setor/lista").hasAuthority("SCOPE_GESTOR_RISCO")
+                        .requestMatchers("api/v1/gestor/indicar{id}")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 ->oauth2
                         .jwt(jwt -> {}));

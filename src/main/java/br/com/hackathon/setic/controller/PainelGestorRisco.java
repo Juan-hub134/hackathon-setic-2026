@@ -16,14 +16,16 @@ public class PainelGestorRisco {
     public PainelGestorRisco(PainelGestorRiscoService painelGestorRiscoService) {
         this.painelGestorRiscoService = painelGestorRiscoService;
     }
-    @GetMapping("gestor/setor/lista")
+    @GetMapping("/gestor/setor/lista")
     public List<ListaSetorResponseDto>lista(@AuthenticationPrincipal Jwt jwt){
             String sub = jwt.getSubject();
             return painelGestorRiscoService.listaDeFuncionariosDoSetorDoGestor(sub);
     }
    //servidor ou ascf
-//    @PostMapping("gestor/indicar{id}")
-//   public ResponseEntity<?> indicarSetor(@AuthenticationPrincipal Jwt jwt, @PathVariable long id){
-//        String sub = jwt.getSubject();
-//    }
+   @PostMapping("/gestor/indicar{id}")
+  public ResponseEntity<?> indicarSetor(@AuthenticationPrincipal Jwt jwt, @PathVariable long id){
+        String sub = jwt.getSubject();
+        painelGestorRiscoService.indicar(id, sub);
+        return  ResponseEntity.ok("cargo alterado com sucesso!");
+   }
 }
