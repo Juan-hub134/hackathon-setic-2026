@@ -1,6 +1,8 @@
 package br.com.hackathon.setic.service;
 
 import br.com.hackathon.setic.dto.response.ListaSetorResponseDto;
+import br.com.hackathon.setic.exception.QuantidadeException;
+import br.com.hackathon.setic.model.Cargo;
 import br.com.hackathon.setic.model.Usuario;
 import br.com.hackathon.setic.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
@@ -26,5 +28,21 @@ public class PainelGestorRiscoService {
                 ))
                 .toList();
         return listaFiltrada;
+    }
+    public void indicar(long idFuncionario, String sub){
+        long idGestor = Integer.parseInt(sub);
+        List<ListaSetorResponseDto> listaDeUsuarios = listaDeFuncionariosDoSetorDoGestor(sub);
+        long quantidadeDePessoasComCargoPRR = listaDeUsuarios.stream()
+                .filter(lista -> lista.cargo().equals("RESPONSAVEL_PRR"))
+                .count();
+        if(quantidadeDePessoasComCargoPRR < 2){
+            Usuario usuario = usuarioRepository.findById(idFuncionario).get();
+            Cargo cargo = usuario.getCargo();
+            cargo.setIdCargo(4);
+            usuario.setCargo(cargo);
+            usuarioRepository.save(usuario);
+        }else {
+            throw new QuantidadeException("Quantidade de pessoas com o cargo RESPONSAVEL_PRR não pode ser excedida");
+        }
     }
 }

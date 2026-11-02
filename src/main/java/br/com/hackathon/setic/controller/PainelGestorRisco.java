@@ -5,9 +5,7 @@ import br.com.hackathon.setic.service.PainelGestorRiscoService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -23,8 +21,9 @@ public class PainelGestorRisco {
             String sub = jwt.getSubject();
             return painelGestorRiscoService.listaDeFuncionariosDoSetorDoGestor(sub);
     }
-//    //servidor ou ascf
-//    public ResponseEntity<?> indicarSetor(){
-//
+   //servidor ou ascf
+//    @PostMapping("gestor/indicar{id}")
+//   public ResponseEntity<?> indicarSetor(@AuthenticationPrincipal Jwt jwt, @PathVariable long id){
+//        String sub = jwt.getSubject();
 //    }
 }
