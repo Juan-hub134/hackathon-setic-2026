@@ -17,6 +17,9 @@ public class ConfigSecurity {
                         .requestMatchers("/api/v1/gestor/setor/lista").hasAuthority("SCOPE_GESTOR_RISCO")
                         .requestMatchers("/api/v1/gestor/indicar/{id}").hasAuthority("SCOPE_GESTOR_RISCO")
                         .requestMatchers("/api/v1/gestor/remover/indicacao/{id}").hasAuthority("SCOPE_GESTOR_RISCO")
+                        .requestMatchers("/api/v1/categorias").permitAll()
+                        .requestMatchers("/api/v1/escalas/probabilidade").permitAll()
+                        .requestMatchers("/api/v1/escalas/impacto").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 ->oauth2
                         .jwt(jwt -> {}));

@@ -23,7 +23,7 @@ public class PainelGestorRiscoService {
     private final HistoricoService historicoService;
     private final CargoRepository cargoRepository;
     private final HistoricoRepository historicoRepository;
-    private static final Set<String> CARGOS_VISIVEIS = Set.of("Servidor", "ASCF", "RESPONSAVEL_PRR")
+    private static final Set<String> CARGOS_VISIVEIS = Set.of("Servidor", "ASCF", "RESPONSAVEL_PRR");
     private static final long ID_CARGO_RESPONSAVEL_PRR = 4L;
     public PainelGestorRiscoService(UsuarioRepository usuarioRepository, HistoricoService historicoService, CargoRepository cargoRepository,
                                     HistoricoRepository historicoRepository) {
