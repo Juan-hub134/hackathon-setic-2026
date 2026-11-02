@@ -25,6 +25,15 @@ public class RiscoController {
     }
     @GetMapping("/riscos")//filtrada pelo setor
     public ResponseEntity<List<RiscoResponseDto>> listarRiscos(@AuthenticationPrincipal Jwt jwt){
-
+        String sub = jwt.getSubject();
+        return ResponseEntity.ok(riscoService.listarRiscosPeloSetorGestor(sub));
+    }
+    @GetMapping("riscos/setores")//risco de todos os setores. obs: rota disponível somente para CGGE e CSGR
+    public ResponseEntity<List<RiscoResponseDto>> listarRiscosSetores(){
+        return ResponseEntity.ok(riscoService.listarRiscosDeTodosOsSetores());
+    }
+    @GetMapping("risco/filtrar/{id}")  //Qualquer pessoa com CGGE e CSGR
+    public ResponseEntity<RiscoResponseDto> filtrarRisco(@PathVariable long id){
+        return ResponseEntity.ok(riscoService.filtrarTodosOsRiscos(id));
     }
 }

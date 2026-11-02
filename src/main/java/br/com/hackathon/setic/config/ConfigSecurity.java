@@ -13,7 +13,7 @@ public class ConfigSecurity {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/login", "/login.html", "/css/**", "/js/**", "/images/**", "/*.html").permitAll()
+                        .requestMatchers("/api/v1/login").permitAll()
                         .requestMatchers("/api/v1/gestor/setor/lista").hasAuthority("SCOPE_GESTOR_RISCO")
                         .requestMatchers("/api/v1/gestor/indicar/{id}").hasAuthority("SCOPE_GESTOR_RISCO")
                         .requestMatchers("/api/v1/gestor/remover/indicacao/{id}").hasAuthority("SCOPE_GESTOR_RISCO")
@@ -21,6 +21,9 @@ public class ConfigSecurity {
                         .requestMatchers("/api/v1/escalas/probabilidade").permitAll()
                         .requestMatchers("/api/v1/escalas/impacto").permitAll()
                         .requestMatchers("/api/v1//registrar/risco").hasAuthority("SCOPE_RESPONSAVEL_PRR")
+                        .requestMatchers("/api/v1/riscos").hasAnyAuthority("SCOPE_GESTOR_RISCO","SCOPE_RESPONSAVEL_PRR")
+                        .requestMatchers("/api/v1/riscos/setores").hasAnyAuthority("SCOPE_CGGE","SCOPE_CSGR")
+                        .requestMatchers("/api/v1/riscos/filtrar/{id}").hasAnyAuthority("SCOPE_CGGE","SCOPE_CSGR")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> {}));

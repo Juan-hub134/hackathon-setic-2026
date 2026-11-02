@@ -20,7 +20,7 @@ public class RsaKeyService {
 
     public RSAPrivateKey carregarPrivateKey() {
         try {
-            Path path = Paths.get("/home/peter/Documents/Faculdade/4º Período/Desenvolvimento WEB/typescript/hackathon-setic-2026/src/main/resources/keys/private_key.pem");
+            Path path = Paths.get("./hackathon-setic-2026/private_key.pem");
             String key = Files.readString(path);
             key = key.replaceAll("-----BEGIN[^-]+-----", "")
                     .replaceAll("-----END[^-]+-----", "")
@@ -36,7 +36,7 @@ public class RsaKeyService {
 
     public RSAPublicKey carregarPublicKey() {
         try {
-            Path path = Paths.get("/home/peter/Documents/Faculdade/4º Período/Desenvolvimento WEB/typescript/hackathon-setic-2026/src/main/resources/keys/public_key.pem");
+            Path path = Paths.get("./hackathon-setic-2026/public_key.pem");
             String key = Files.readString(path);
             key = key.replaceAll("-----BEGIN[^-]+-----", "")
                     .replaceAll("-----END[^-]+-----", "")

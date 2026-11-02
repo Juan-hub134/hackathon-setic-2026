@@ -9,10 +9,11 @@ import java.util.List;
 public record RiscoResponseDto(long idRisco,
                                String setor,
                                String categoria,
-                               List<EscalaProbabilidade> probabilidade,//nota e rotulo
-                               List<EscalaImpacto> impacto,//nota e rotulo
+                               String descricao,
+                               EscalaResponseDto probabilidade,//nota e rotulo
+                               EscalaResponseDto impacto,//nota e rotulo
                                long nivel,
-                               String faixa,
+                               int horizonteMeses,
                                String criadoPor,
                                LocalDateTime criadoEm) {
 }
