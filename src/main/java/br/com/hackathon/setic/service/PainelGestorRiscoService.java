@@ -15,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class PainelGestorRiscoService {
@@ -22,6 +23,7 @@ public class PainelGestorRiscoService {
     private final HistoricoService historicoService;
     private final CargoRepository cargoRepository;
     private final HistoricoRepository historicoRepository;
+    private static final Set<String> CARGOS_VISIVEIS = Set.of("Servidor", "ASCF", "RESPONSAVEL_PRR");
     private static final long ID_CARGO_RESPONSAVEL_PRR = 4L;
     public PainelGestorRiscoService(UsuarioRepository usuarioRepository, HistoricoService historicoService, CargoRepository cargoRepository,
                                     HistoricoRepository historicoRepository) {
@@ -31,12 +33,14 @@ public class PainelGestorRiscoService {
         this.historicoRepository = historicoRepository;
     }
     public List<ListaSetorResponseDto> listaDeFuncionariosDoSetorDoGestor(String sub){
-        long id = Integer.parseInt(sub);
+        long id = Long.parseLong(sub);
+
         Usuario usuario = usuarioRepository.findById(id).get();
         long idSetor = usuario.getSetor().getIdSetor();
         List<Usuario> listaDeFuncionariosDoSetorDoGestor = usuarioRepository.fltrarPorSetorDoGestor(idSetor);
         List<ListaSetorResponseDto> listaFiltrada = listaDeFuncionariosDoSetorDoGestor.stream()
                 .filter(lista -> lista.getIdUsuario() != id)
+                .filter(lista -> CARGOS_VISIVEIS.contains(lista.getCargo().getCargo()))
                 .map(lista -> new ListaSetorResponseDto(
                         lista.getIdUsuario(),
                         lista.getNome(),

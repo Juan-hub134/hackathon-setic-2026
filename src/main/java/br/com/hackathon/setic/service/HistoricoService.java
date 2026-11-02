@@ -1,6 +1,7 @@
 package br.com.hackathon.setic.service;
 
 import br.com.hackathon.setic.model.Historico;
+import br.com.hackathon.setic.model.Risco;
 import br.com.hackathon.setic.model.Usuario;
 import br.com.hackathon.setic.repository.HistoricoRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -61,6 +62,38 @@ public class HistoricoService {
         historico.setDepois(
                 objectMapper.valueToTree(
                         Map.of("id_cargo", cargoNovo)
+                )
+        );
+        historicoRepository.save(historico);
+    }
+    public void registrarRiscoNovo(Usuario usuario, Risco risco) {
+        Historico historico = new Historico();
+
+        historico.setUsuario(usuario);
+        historico.setIdRegistro(risco.getIdRisco());
+        historico.setTabela("risco");
+        historico.setOperacao("REGISTRAR_RISCO");
+        historico.setAlteradoEm(LocalDateTime.now());
+        historico.setCamposAlterados("todos");
+
+        historico.setAntes(
+                objectMapper.valueToTree(Map.of())
+        );
+
+        historico.setDepois(
+                objectMapper.valueToTree(
+                        Map.of(
+                                "id_risco", risco.getIdRisco(),
+                                "id_categoria", risco.getCategoria().getIdCategoria(),
+                                "causa", risco.getCausa(),
+                                "evento", risco.getEvento(),
+                                "impacto_txt", risco.getImpactoTxt(),
+                                "objetivo", risco.getObjetivo(),
+                                "descricao", risco.getDescricao(),
+                                "id_probabilidade", risco.getEscalaProbabilidade().getNota(),
+                                "id_impacto", risco.getEscalaImpacto().getNota(),
+                                "horizonte_meses", risco.getHorizonteMeses()
+                        )
                 )
         );
         historicoRepository.save(historico);
