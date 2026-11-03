@@ -28,6 +28,7 @@ public class RiscoController {
         String sub = jwt.getSubject();
         return ResponseEntity.ok(riscoService.listarRiscosPeloSetorGestor(sub));
     }
+
     @GetMapping("riscos/setores")//risco de todos os setores. obs: rota disponível somente para CGGE e CSGR
     public ResponseEntity<List<RiscoResponseDto>> listarRiscosSetores(){
         return ResponseEntity.ok(riscoService.listarRiscosDeTodosOsSetores());

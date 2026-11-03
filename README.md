@@ -1,16 +1,14 @@
-# MGR - Sistema de Gestão de Riscos (SETIC - Hackathon 2026)
+# API de Gestao de Riscos - SETIC Hackathon 2026
 
-Este projeto é um sistema web para **Gestão de Riscos Institucionais (MGR)** desenvolvido para a **SETIC (Superintendência Estadual de Tecnologia da Informação e Comunicação)** durante o Hackathon 2026. A aplicação combina um backend robusto em **Java 27 / Spring Boot** com persistência em **PostgreSQL**, autenticação via **JWT (RSA256)** e um frontend estático integrado.
+Sistema de gestao de riscos baseado no Modelo de Gestao de Riscos (MGR), implementando o fluxo completo desde a identificacao ate a avaliacao de Planos de Resposta a Riscos (PRR).
 
----
+## Tecnologias
 
-## Tecnologias Utilizadas
-
-- **Java 27** (OpenJDK)
+- **Java 21**
 - **Spring Boot 4.0.9** (Spring Security, Spring Data JPA, Web)
-- **PostgreSQL 16+**
-- **JWT (JSON Web Token)** com par de chaves **RSA256**
-- **HTML5, Tailwind CSS, Lucide Icons e JavaScript (Fetch API)**
+- **PostgreSQL 18.6**
+- **JWT RS256** (autenticacao com chaves RSA)
+- **Maven**
 
 ---
 
@@ -148,21 +146,181 @@ Com o backend em execução na porta `8080`:
 
 ---
 
-## Principais Endpoints da API
+## Arquitetura
 
-| Método | Endpoint | Descrição |
-|---|---|---|
-| `POST` | `/api/auth/login` | Realiza autenticação e valida credenciais na tabela `usuario` |
-| `GET` | `/api/usuarios` | Lista todos os usuários cadastrados no banco |
-| `POST` | `/api/usuarios` | Cria um novo registro de usuário |
+### Camadas da Aplicacao
+
+```
+src/main/java/br/com/hackathon/setic/
+├── config/          # Configuracoes (Seguranca, JWT, CORS)
+├── controller/      # Endpoints REST
+├── dto/            # Data Transfer Objects (Request/Response)
+├── model/          # Entidades JPA
+├── repository/     # Repositories Spring Data JPA
+└── service/        # Logica de negocio
+```
+
+### Fluxo do Sistema
+
+1. **Identificacao de Risco** - Gestor de Risco registra um risco
+2. **Estabelecimento do Contexto** - Define escopo e roadmap de etapas
+3. **Plano de Resposta ao Risco (PRR)** - Responsavel PRR cria o plano de tratamento
+4. **Avaliacao CSGR** - Comite avalia e aprova/reprova o PRR
+5. **Monitoramento** - Historico completo de todas as operacoes
+
+### Entidades Principais
+
+- **Risco**: Evento identificado com causa, evento, impacto e nivel
+- **Contexto**: Estabelecimento do contexto do risco
+- **ContextoEtapa**: Roadmap de etapas do contexto
+- **PlanoResposta (PRR)**: Plano de resposta ao risco
+- **ParecerPrr**: Avaliacao do CSGR sobre o PRR
+- **TratamentoRiscos**: Tipo de tratamento (evitar, transferir, mitigar, aceitar)
+- **Parametros**: Parametros de medicao do PRR
+- **Historico**: Auditoria de todas as operacoes
 
 ---
 
-## Solução de Problemas Frequentes
+## Autenticacao
 
-- **Erro `Illegal base64 character` no Spring:**
-  Verifique se o arquivo `RsaKeyService.java` está tratando a remoção de cabeçalhos das chaves pública e privada (`-----BEGIN...-----` e `-----END...-----`).
-- **Erro de Conexão com o PostgreSQL:**
-  Verifique se o usuário, senha e porta no `application.properties` correspondem à sua instância local do PostgreSQL.
-- **Erro de Chave Estrangeira `fk_cargo_usuario`:**
-  Garantir que a coluna `id_cargo` na tabela `usuario` seja do tipo `bigint` e não `varchar`.
+A API utiliza JWT RS256 com chaves RSA. Todas as rotas (exceto `/api/v1/login`) requerem autenticacao.
+
+### Roles/Permissoes
+
+- `SCOPE_GESTOR_RISCO`: Gerencia riscos e contextos
+- `SCOPE_RESPONSAVEL_PRR`: Cria e atualiza PRRs
+- `SCOPE_CSGR`: Avalia e aprova/reprova PRRs
+- `SCOPE_CGGE`: Visualizacao de todos os dados
+
+---
+
+## Principais Endpoints da API
+
+### Autenticacao
+
+#### `POST /api/v1/login`
+Login do usuario
+
+**Request:**
+```json
+{
+  "email": "usuario@email.com",
+  "senha": "senha123"
+}
+```
+
+---
+
+### Riscos
+
+#### `POST /api/v1/risco`
+Cria um novo risco - **Permissao:** `SCOPE_GESTOR_RISCO`
+
+**Request:**
+```json
+{
+  "idCategoria": 1,
+  "causa": "Falta de capacitacao",
+  "evento": "erro na execucao",
+  "impactoTxt": "atrasos no projeto",
+  "objetivo": "conclusao no prazo",
+  "idProbabilidade": 3,
+  "idImpacto": 4,
+  "horizonteMeses": 6
+}
+```
+
+#### `GET /api/v1/risco/setor`
+Lista riscos do setor - **Permissao:** `SCOPE_GESTOR_RISCO`
+
+#### `GET /api/v1/risco/todos`
+Lista todos os riscos - **Permissao:** `SCOPE_CGGE`
+
+#### `GET /api/v1/risco/{id}`
+Busca risco por ID - **Permissao:** `SCOPE_GESTOR_RISCO`, `SCOPE_CGGE`
+
+---
+
+### Contexto
+
+#### `POST /api/v1/contexto`
+Cria o contexto de um risco - **Permissao:** `SCOPE_GESTOR_RISCO`
+
+**Request:**
+```json
+{
+  "idRisco": 1,
+  "escopo": "Implementacao de treinamento",
+  "etapas": [
+    {
+      "etapa": "Levantamento de necessidades",
+      "prazo": "2026-12-01"
+    }
+  ]
+}
+```
+
+#### `GET /api/v1/contexto/risco/{idRisco}`
+Busca contexto de um risco - **Permissao:** `SCOPE_GESTOR_RISCO`, `SCOPE_RESPONSAVEL_PRR`
+
+#### `PUT /api/v1/contexto/etapa/{idEtapa}/concluir`
+Marca etapa como concluida - **Permissao:** `SCOPE_GESTOR_RISCO`
+
+---
+
+### Plano de Resposta ao Risco (PRR)
+
+#### `POST /api/v1/prr`
+Cria um Plano de Resposta - **Permissao:** `SCOPE_RESPONSAVEL_PRR`
+
+**Request:**
+```json
+{
+  "idContexto": 1,
+  "idTratamento": 3,
+  "idParametro": 2,
+  "nomeResponsaveis": "João Silva, Maria Santos",
+  "controlesExistentes": "Revisao de codigo, testes",
+  "acaoProposta": "Programa de treinamento",
+  "metricas": "Reducao de 50% nos erros"
+}
+```
+
+#### `GET /api/v1/prr/contexto/{idContexto}`
+Busca PRR de um contexto - **Permissao:** `SCOPE_RESPONSAVEL_PRR`, `SCOPE_CSGR`
+
+#### `PUT /api/v1/prr/{id}`
+Atualiza um PRR - **Permissao:** `SCOPE_RESPONSAVEL_PRR`
+
+---
+
+### Parecer CSGR
+
+#### `POST /api/v1/parecer`
+CSGR avalia um PRR - **Permissao:** `SCOPE_CSGR`
+
+**Request:**
+```json
+{
+  "idResposta": 1,
+  "statusResultado": "APROVADO",
+  "parecerTexto": "PRR aprovado"
+}
+```
+
+#### `GET /api/v1/parecer/prr/{idResposta}`
+Lista pareceres de um PRR - **Permissao:** `SCOPE_GESTOR_RISCO`, `SCOPE_CSGR`, `SCOPE_CGGE`
+
+---
+
+## Status do PRR
+
+- `PENDENTE`: Aguardando avaliacao
+- `APROVADO`: Aprovado pelo CSGR
+- `REPROVADO`: Reprovado pelo CSGR
+
+---
+
+## Auditoria
+
+Todas as operacoes sao registradas na tabela `historico` com usuario, data/hora, operacao e valores antes/depois (JSON).

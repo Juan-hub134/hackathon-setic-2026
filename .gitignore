@@ -1,5 +1,15 @@
 HELP.md
 target/
+
+### Documentos de instrucoes (nao subir) ###
+RESUMO_API_COMPLETA.md
+INSTRUCOES_RAPIDAS.md
+README_FINAL.md
+INSTRUCOES_FINAIS_PARECER.md
+LEIA_ISTO_PRIMEIRO.md
+CONTEXTO_PROJETO.md
+modelo_de_gestao_de_riscos.md
+Desafios_Hackathon_SETIC_Oficial.md
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
