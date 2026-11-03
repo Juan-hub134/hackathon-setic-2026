@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - MGR SETIC</title>
+    <link rel="stylesheet" href="/app.css">
+    <script src="/api.js"></script>
+</head>
+<body class="login-shell flex min-h-screen items-center justify-center px-4 py-8 text-slate-800">
+
+<main class="login-card w-full max-w-lg space-y-6 rounded-2xl p-7 sm:p-9">
+    <div class="flex items-center gap-3 border-b border-slate-200 pb-5">
+        <div class="login-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3 19 6v5c0 5-3 8-7 10-4-2-7-5-7-10V6l7-3Z"></path>
+                <path d="M12 8v4"></path>
+                <path d="M12 15h.01"></path>
+            </svg>
+        </div>
+        <div>
+            <h1 class="text-lg font-bold leading-none tracking-wide text-slate-900">SETIC</h1>
+            <span class="text-xs font-medium text-slate-500">Modelo de Gestão de Riscos</span>
+        </div>
+    </div>
+    <div>
+        <h2 class="text-xl font-bold tracking-tight text-slate-900">Acesse sua conta</h2>
+        <p class="mt-1 text-sm leading-6 text-slate-600">Escolha o fluxo que corresponde à sua função. O sistema confirma o cargo pelo cadastro da conta; a seleção não concede permissões.</p>
+    </div>
+
+    <form id="loginForm" class="space-y-4">
+        <fieldset class="space-y-2">
+            <legend class="mb-2 text-sm font-semibold text-slate-700">Como você participa do MGR?</legend>
+            <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-3 hover:border-blue-400">
+                <input type="radio" name="perfilAcesso" value="RESPONSAVEL_PRR" checked class="mt-1">
+                <span>
+                    <span class="block text-sm font-semibold text-slate-800">Registrante · servidor</span>
+                    <span class="block text-xs leading-5 text-slate-500">Registra riscos e acompanha os registros do setor.</span>
+                </span>
+            </label>
+            <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-3 hover:border-blue-400">
+                <input type="radio" name="perfilAcesso" value="GESTOR_RISCO" class="mt-1">
+                <span>
+                    <span class="block text-sm font-semibold text-slate-800">Titular do setor · gestor de riscos</span>
+                    <span class="block text-xs leading-5 text-slate-500">Define contexto, cronograma, tratamento e solicita análise direta da CSGR.</span>
+                </span>
+            </label>
+            <label id="cgge-access-option" class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-3 hover:border-blue-400">
+                <input type="radio" name="perfilAcesso" value="CGGE" class="mt-1">
+                <span>
+                    <span class="block text-sm font-semibold text-slate-800">CGGE · consulta intersetorial</span>
+                    <span class="block text-xs leading-5 text-slate-500">Acompanha informações consolidadas dos setores.</span>
+                </span>
+            </label>
+        </fieldset>
+
+        <div>
+            <label for="email" class="mb-1 block text-sm font-semibold text-slate-700">E-mail institucional</label>
+            <input type="email" id="email" required placeholder="seu.email@setic.ro.gov.br"
+                   autocomplete="username" autofocus
+                   class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500">
+        </div>
+
+        <div>
+            <label for="senha" class="mb-1 block text-sm font-semibold text-slate-700">Senha</label>
+            <input type="password" id="senha" required placeholder="••••••••"
+                   autocomplete="current-password"
+                   class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500">
+        </div>
+
+        <div id="error-msg" role="alert" aria-live="polite" class="hidden rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">E-mail ou senha incorretos.</div>
+
+        <button type="submit" class="w-full rounded-lg bg-blue-700 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800">
+            Entrar
+        </button>
+    </form>
+    <div class="border-t border-slate-200 pt-4 text-center">
+        <p class="text-xs text-slate-500">Membro da comissão?</p>
+        <a id="csgr-access" href="/login.html?access=csgr" class="mt-1 inline-block text-sm font-semibold text-blue-700 hover:underline">
+            Acessar área CSGR · análise de solicitações diretas
+        </a>
+    </div>
+    <p class="text-center text-xs text-slate-500">Sistema de Gestão de Riscos · SETIC</p>
+</main>
+
+<script>
+    function obterCargoDoToken(token) {
+        const encodedPayload = token.split('.')[1];
+        if (!encodedPayload) throw new Error('O servidor retornou um token inválido.');
+
+        const base64 = encodedPayload.replace(/-/g, '+').replace(/_/g, '/');
+        const payload = JSON.parse(new TextDecoder().decode(
+            Uint8Array.from(atob(base64), character => character.charCodeAt(0))
+        ));
+        const scope = String(payload.scope || '').normalize('NFD')
+            .replace(/\p{M}/gu, '')
+            .toUpperCase()
+            .replace(/[^A-Z0-9]+/g, '_')
+            .replace(/^_|_$/g, '');
+
+        return {
+            GESTOR_DE_RISCO: 'GESTOR_RISCO',
+            RESPONSAVEL_PELO_PRR: 'RESPONSAVEL_PRR'
+        }[scope] || scope;
+    }
+
+    const modoCsgr = new URLSearchParams(window.location.search).get('access') === 'csgr';
+    const csgrAccess = document.getElementById('csgr-access');
+    if (modoCsgr) {
+        const csgrOption = document.createElement('label');
+        csgrOption.className = 'flex cursor-pointer items-start gap-3 rounded-lg border border-indigo-200 bg-indigo-50 p-3';
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = 'perfilAcesso';
+        radio.value = 'CSGR';
+        radio.checked = true;
+        radio.className = 'mt-1';
+        const description = document.createElement('span');
+        const title = document.createElement('span');
+        title.className = 'block text-sm font-semibold text-slate-800';
+        title.textContent = 'CSGR · análise de solicitações do titular';
+        const details = document.createElement('span');
+        details.className = 'block text-xs leading-5 text-slate-500';
+        details.textContent = 'O acesso permite analisar apenas PRRs encaminhados em solicitações reais.';
+        description.append(title, details);
+        csgrOption.append(radio, description);
+        document.querySelector('fieldset').appendChild(csgrOption);
+        document.querySelector('input[value="RESPONSAVEL_PRR"]').checked = false;
+        document.getElementById('cgge-access-option').classList.add('hidden');
+        csgrAccess.textContent = 'Voltar aos acessos de registrante e titular';
+        csgrAccess.href = '/login.html';
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email').value;
+        const senha = document.getElementById('senha').value;
+        const errorMsg = document.getElementById('error-msg');
+        const perfilSelecionado = document.querySelector('input[name="perfilAcesso"]:checked')?.value;
+
+        errorMsg.classList.add('hidden');
+
+        try {
+            // Requisição ajustada para enviar apenas o que o LoginRequestDto do backend espera
+            const response = await apiRequest('/login', {
+                auth: false,
+                method: 'POST',
+                body: JSON.stringify({ email, senha })
+            });
+
+            const data = typeof response === 'string' && response.trim().startsWith('{')
+                ? JSON.parse(response)
+                : response;
+            const token = typeof data === 'string' ? data : data?.token;
+
+            if (typeof token !== 'string' || !token.trim()) {
+                throw new Error('O servidor não retornou um token de acesso.');
+            }
+
+            const cargo = obterCargoDoToken(token.trim());
+            if (cargo !== perfilSelecionado) {
+                const nomes = {
+                    GESTOR_RISCO: 'Titular do setor · gestor de riscos',
+                    RESPONSAVEL_PRR: 'Registrante · servidor',
+                    CSGR: 'Área CSGR'
+                };
+                throw new Error(`Esta conta está cadastrada como ${nomes[cargo] || cargo}. Selecione o acesso correspondente.`);
+            }
+
+            localStorage.setItem('token', token.trim());
+            localStorage.setItem('usuarioLogado', JSON.stringify({ email, perfil: cargo }));
+
+            if (cargo === 'CSGR') {
+                window.location.href = '/csgr.html';
+            } else if (cargo === 'CGGE') {
+                window.location.href = 'gestor.html';
+            } else {
+                window.location.href = '/index.html';
+            }
+        } catch (err) {
+            console.error('Erro na autenticação:', err);
+            errorMsg.textContent = err.message.includes('401') || err.message.includes('Unauthorized')
+                ? 'E-mail ou senha incorretos.'
+                : err.message;
+            errorMsg.classList.remove('hidden');
+        }
+    });
+</script>
+</body>
+</html>

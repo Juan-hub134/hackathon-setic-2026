@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MGR SETIC — Painel de Gestão</title>
+    <link rel="stylesheet" href="/app.css">
+    <script src="/api.js"></script>
+    <script src="/risk-matrix.js"></script>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800">
+<header class="app-header text-white shadow">
+    <div class="app-header-inner flex flex-wrap items-center justify-between gap-4 px-4 py-4">
+        <div>
+            <h1 class="text-lg font-bold">SETIC · Painel de Gestão de Riscos</h1>
+            <p id="user-context" class="text-xs text-slate-300">Carregando conta...</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <a id="operations-link" href="/index.html" class="rounded-lg border border-slate-600 px-3 py-2 text-xs font-semibold hover:bg-slate-800">Fluxo MGR do setor</a>
+            <button type="button" onclick="fazerLogout()" class="rounded-lg border border-slate-600 px-3 py-2 text-xs font-semibold hover:bg-slate-800">Sair</button>
+        </div>
+    </div>
+</header>
+
+<main class="app-main space-y-6 px-4">
+    <section class="page-intro">
+        <p class="page-eyebrow">Modelo de Gestão de Riscos</p>
+        <h2 class="page-title">Painel de acompanhamento</h2>
+        <p id="page-guidance" class="page-description">Selecione um risco para acompanhar contexto, tratamento e avaliação.</p>
+    </section>
+
+    <nav class="workflow" aria-label="Cinco fases do processo de gestão de riscos">
+        <a class="workflow-step" data-workflow-step="context" data-state="active" href="#context-panel">
+            <span class="workflow-number">1</span><span><span class="workflow-label">Contexto</span><span class="workflow-status">Escopo e cronograma</span></span>
+        </a>
+        <a class="workflow-step" data-workflow-step="risk" data-state="waiting" href="#risk-panel">
+            <span class="workflow-number">2</span><span><span class="workflow-label">Identificação</span><span class="workflow-status">Causa e evento</span></span>
+        </a>
+        <a class="workflow-step" data-workflow-step="evaluation" data-state="waiting" href="#risk-matrix-panel">
+            <span class="workflow-number">3</span><span><span class="workflow-label">Avaliação</span><span class="workflow-status">Matriz 5 × 5</span></span>
+        </a>
+        <a class="workflow-step" data-workflow-step="treatment" data-state="waiting" href="#prr-panel">
+            <span class="workflow-number">4</span><span><span class="workflow-label">Tratamento</span><span class="workflow-status">PRR e parecer</span></span>
+        </a>
+        <a class="workflow-step" data-workflow-step="monitoring" data-state="waiting" href="#monitor-panel">
+            <span class="workflow-number">5</span><span><span class="workflow-label">Monitoramento</span><span class="workflow-status">Métricas e prazos</span></span>
+        </a>
+    </nav>
+
+    <p class="communication-note">Atualizações, aprovações e erros são comunicados nesta página. Avisos de prazo são calculados a partir do cronograma; medições periódicas dependem de suporte adicional da API.</p>
+    <div id="page-message" role="status" class="hidden rounded-lg border px-4 py-3 text-sm"></div>
+
+    <section id="risk-panel" class="app-panel rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <p class="page-eyebrow">Etapa 2 · Identificação</p>
+                <h2 class="font-bold">Riscos</h2>
+                <p class="mt-1 text-sm text-slate-500">Registros e avaliações disponíveis para o seu perfil.</p>
+            </div>
+            <button type="button" onclick="carregarRiscos()" class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-50">Atualizar riscos</button>
+        </div>
+        <label for="risk-selector" class="mb-1 block text-sm font-semibold">Escolha um risco para acompanhar</label>
+        <select id="risk-selector" onchange="selecionarRisco(this.value)" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
+            <option value="">Carregando riscos...</option>
+        </select>
+        <div id="risk-details" class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"></div>
+        <p id="risk-score-warning" class="matrix-warning hidden" role="status"></p>
+        <p id="risk-empty" class="hidden py-5 text-center text-sm text-slate-500">A API não retornou riscos para esta conta.</p>
+    </section>
+
+    <section id="risk-matrix-panel" class="app-panel risk-matrix-panel" aria-labelledby="matrix-title">
+        <p class="page-eyebrow">Etapa 3 · Avaliação do risco</p>
+        <h2 id="matrix-title">Matriz de riscos 5 × 5</h2>
+        <p class="mt-1 text-sm text-slate-500">O nível é calculado pela multiplicação da nota de probabilidade pela nota de impacto. Cada número de risco indica um registro retornado pela API.</p>
+        <div id="risk-matrix" class="risk-matrix-content"></div>
+    </section>
+
+    <section id="team-panel" class="app-panel hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <p class="page-eyebrow">Equipe do setor</p>
+                <h2 class="font-bold">Servidores do setor</h2>
+                <p class="mt-1 text-sm text-slate-500">Indique quem poderá responder pelos Planos de Resposta a Riscos.</p>
+            </div>
+            <button type="button" onclick="carregarEquipe()" class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-50">Atualizar servidores</button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[560px] text-left text-sm">
+                <thead class="border-b border-slate-200 text-xs uppercase text-slate-500">
+                <tr><th class="p-3">Nome</th><th class="p-3">Cargo cadastrado</th><th class="p-3 text-right">Indicação para PRR</th></tr>
+                </thead>
+                <tbody id="team-rows"></tbody>
+            </table>
+        </div>
+        <p id="team-empty" class="hidden py-5 text-center text-sm text-slate-500">A API não retornou servidores.</p>
+    </section>
+
+    <section id="context-panel" class="app-panel hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="page-eyebrow">Etapa 1 · Estabelecimento do contexto</p>
+        <h2 class="font-bold">Contexto e etapas</h2>
+        <p class="mb-3 mt-1 text-sm text-slate-500">Escopo e cronograma associados ao risco selecionado.</p>
+        <p class="phase-note">O contexto MGR descreve o escopo, os responsáveis e o cronograma. Como o contexto pertence a um risco, selecione primeiro o registro na etapa de identificação quando ainda não houver risco selecionado.</p>
+        <div id="context-details" class="text-sm"></div>
+    </section>
+
+    <section id="prr-panel" class="app-panel hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="page-eyebrow">Etapa 4 · Tratamento</p>
+        <h2 class="font-bold">Plano de Resposta a Riscos</h2>
+        <p class="mb-3 mt-1 text-sm text-slate-500">Ações, controles, responsáveis e métricas do tratamento.</p>
+        <div id="prr-details" class="space-y-2 text-sm"></div>
+    </section>
+
+    <section id="opinion-panel" class="app-panel hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="page-eyebrow">Etapa 4 · Aprovação pela CSGR</p>
+        <h2 class="font-bold">Pareceres da CSGR</h2>
+        <p class="mb-3 mt-1 text-xs text-slate-500">Histórico obtido pela API. A conta CSGR pode registrar novos pareceres.</p>
+        <div id="opinion-history" class="space-y-2"></div>
+        <form id="opinion-form" class="mt-4 space-y-3">
+            <label class="block text-xs font-semibold">Resultado
+                <select id="opinion-status" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
+                    <option value="APROVADO">Aprovado</option>
+                    <option value="REPROVADO">Reprovado</option>
+                </select>
+            </label>
+            <label class="block text-xs font-semibold">Parecer
+                <textarea id="opinion-text" required rows="3" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"></textarea>
+            </label>
+            <button class="rounded-lg bg-indigo-700 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-800">Registrar parecer na API</button>
+        </form>
+    </section>
+
+    <section id="monitor-panel" class="app-panel hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="page-eyebrow">Etapa 5 · Monitoramento e reavaliação</p>
+        <h2 class="font-bold">Acompanhamento do tratamento</h2>
+        <p class="mb-3 mt-1 text-sm text-slate-500">Consulte as métricas e os marcos previstos no PRR e no cronograma do contexto.</p>
+        <div id="monitor-details" class="phase-summary-grid"></div>
+        <p class="phase-note mt-3">A API atual fornece o plano, as métricas e o status das etapas, mas ainda não oferece lançamento periódico de medições nem histórico de reavaliações. Esta tela não inventa resultados de acompanhamento.</p>
+    </section>
+</main>
+
+<script>
+    const state = {
+        token: localStorage.getItem('token'),
+        user: null,
+        role: '',
+        risks: [],
+        selectedRisk: null,
+        context: null,
+        prr: null,
+        opinions: []
+    };
+
+    function decodeJwt(token) {
+        const part = token?.split('.')[1];
+        if (!part) throw new Error('Token inválido.');
+        const base64 = part.replace(/-/g, '+').replace(/_/g, '/');
+        return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(base64), char => char.charCodeAt(0))));
+    }
+
+    function normalizeRole(role) {
+        const value = String(role || '').normalize('NFD').replace(/\p{M}/gu, '')
+            .toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_|_$/g, '');
+        return { GESTOR_DE_RISCO: 'GESTOR_RISCO', RESPONSAVEL_PELO_PRR: 'RESPONSAVEL_PRR' }[value] || value;
+    }
+
+    function showMessage(message, type = 'error') {
+        const banner = document.getElementById('page-message');
+        banner.textContent = message;
+        banner.className = `rounded-lg border px-4 py-3 text-sm ${type === 'error'
+            ? 'border-rose-200 bg-rose-50 text-rose-800'
+            : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`;
+        banner.classList.remove('hidden');
+    }
+
+    function atualizarFluxo() {
+        const allSteps = [
+            { key: 'context', target: 'context-panel', complete: Boolean(state.context), waiting: state.selectedRisk ? 'Defina o escopo' : 'Selecione um risco para abrir o contexto' },
+            { key: 'risk', target: 'risk-panel', complete: Boolean(state.selectedRisk), waiting: 'Selecione um risco' },
+            { key: 'evaluation', target: 'risk-matrix-panel', complete: Boolean(state.selectedRisk), waiting: 'Avalie probabilidade × impacto' },
+            { key: 'treatment', target: 'prr-panel', complete: Boolean(state.prr), waiting: state.context ? 'Elabore o PRR' : 'Aguardando contexto' },
+            { key: 'monitoring', target: 'monitor-panel', complete: false, waiting: state.prr ? 'Acompanhe métricas e prazos' : 'Aguardando PRR' }
+        ];
+        allSteps.forEach(step => {
+            const panel = document.getElementById(step.target);
+            const link = document.querySelector(`[data-workflow-step="${step.key}"]`);
+            if (link) link.hidden = !panel || panel.classList.contains('hidden');
+        });
+        const steps = allSteps.filter(step => {
+            const panel = document.getElementById(step.target);
+            return panel && !panel.classList.contains('hidden');
+        });
+        let nextIncomplete = true;
+        steps.forEach(step => {
+            const link = document.querySelector(`[data-workflow-step="${step.key}"]`);
+            if (!link) return;
+            const complete = step.complete;
+            const active = !complete && nextIncomplete;
+            link.dataset.state = complete ? 'complete' : active ? 'active' : 'waiting';
+            link.setAttribute('aria-current', active ? 'step' : 'false');
+            link.querySelector('.workflow-status').textContent =
+                complete ? 'Concluído' : active ? step.waiting : 'Etapa seguinte';
+            if (active) nextIncomplete = false;
+        });
+    }
+
+    function addText(parent, label, value, className = '') {
+        const line = document.createElement('p');
+        line.className = className;
+        if (label) {
+            const title = document.createElement('strong');
+            title.textContent = `${label}: `;
+            line.appendChild(title);
+        }
+        line.appendChild(document.createTextNode(value == null || value === '' ? 'Não informado na API' : String(value)));
+        parent.appendChild(line);
+    }
+
+    async function init() {
+        if (!state.token) {
+            window.location.replace('/login.html');
+            return;
+        }
+        try {
+            state.user = decodeJwt(state.token);
+            state.role = normalizeRole(state.user.scope);
+        } catch {
+            fazerLogout();
+            return;
+        }
+
+        if (state.role === 'CSGR') {
+            window.location.replace('/csgr.html');
+            return;
+        }
+        if (!['GESTOR_RISCO', 'CGGE'].includes(state.role)) {
+            window.location.replace('/index.html');
+            return;
+        }
+
+        document.getElementById('user-context').textContent =
+            `${state.user.setor || 'Setor não informado'} · ${state.role}`;
+        document.getElementById('operations-link').classList.toggle('hidden', state.role === 'CGGE');
+        document.getElementById('team-panel').classList.toggle('hidden', state.role !== 'GESTOR_RISCO');
+        document.getElementById('context-panel').classList.remove('hidden');
+        document.getElementById('prr-panel').classList.remove('hidden');
+        document.getElementById('opinion-panel').classList.toggle('hidden', state.role !== 'CSGR');
+        document.getElementById('monitor-panel').classList.remove('hidden');
+        const guidance = {
+            GESTOR_RISCO: 'Acompanhe os riscos do setor, organize o contexto e mantenha os planos de resposta atualizados.',
+            CSGR: 'Analise os Planos de Resposta a Riscos e registre o parecer da comissão.',
+            CGGE: 'Acompanhe os riscos, contextos e planos de resposta registrados pelos setores.'
+        };
+        document.getElementById('page-guidance').textContent = guidance[state.role] || 'Selecione um risco para acompanhar o andamento do processo.';
+        document.getElementById('opinion-form').addEventListener('submit', registrarParecer);
+
+        atualizarFluxo();
+        if (state.role === 'GESTOR_RISCO') await carregarEquipe();
+        renderRiskMatrix(document.getElementById('risk-matrix'), state.risks, null);
+        renderizarMonitoramento();
+        await carregarRiscos();
+    }
+
+    async function carregarEquipe() {
+        try {
+            const people = await apiRequest('/gestor/setor/lista');
+            const tbody = document.getElementById('team-rows');
+            tbody.replaceChildren();
+            document.getElementById('team-empty').classList.toggle('hidden', people.length > 0);
+            people.forEach(person => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-slate-100';
+                const name = document.createElement('td');
+                name.className = 'p-3';
+                name.textContent = person.nome;
+                const role = document.createElement('td');
+                role.className = 'p-3 text-slate-600';
+                role.textContent = person.cargo;
+                const actions = document.createElement('td');
+                actions.className = 'p-3 text-right';
+                const assign = document.createElement('button');
+                assign.type = 'button';
+                assign.className = 'mr-2 rounded-md border border-blue-200 px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-50';
+                assign.textContent = 'Indicar para PRR';
+                assign.addEventListener('click', () => alterarIndicacao(person.id, true));
+                const remove = document.createElement('button');
+                remove.type = 'button';
+                remove.className = 'rounded-md border border-rose-200 px-2 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-50';
+                remove.textContent = 'Remover indicação';
+                remove.addEventListener('click', () => alterarIndicacao(person.id, false));
+                actions.append(assign, remove);
+                row.append(name, role, actions);
+                tbody.appendChild(row);
+            });
+        } catch (error) {
+            showMessage(`Não foi possível carregar os servidores: ${error.message}`);
+        }
+    }
+
+    async function alterarIndicacao(id, indicar) {
+        const action = indicar ? 'indicar este servidor para responder por PRRs' : 'remover a indicação deste servidor';
+        if (!confirm(`Deseja ${action}?`)) return;
+        try {
+            const message = await apiRequest(
+                indicar ? `/gestor/indicar/${encodeURIComponent(id)}` : `/gestor/remover/indicacao/${encodeURIComponent(id)}`,
+                { method: 'POST' }
+            );
+            showMessage(message || 'Alteração registrada.', 'success');
+            await carregarEquipe();
+        } catch (error) {
+            showMessage(`Não foi possível alterar a indicação: ${error.message}`);
+        }
+    }
+
+    async function carregarRiscos() {
+        try {
+            const endpoint = ['CSGR', 'CGGE'].includes(state.role) ? '/riscos/setores' : '/riscos';
+            state.risks = await apiRequest(endpoint);
+            renderRiskMatrix(document.getElementById('risk-matrix'), state.risks, null);
+            const select = document.getElementById('risk-selector');
+            select.replaceChildren(new Option(state.risks.length ? 'Selecione um risco...' : 'Nenhum risco retornado', ''));
+            state.risks.forEach(risk => select.add(new Option(
+                `${risk.idRisco} · ${risk.descricao} · ${risk.setor}`,
+                String(risk.idRisco)
+            )));
+            document.getElementById('risk-empty').classList.toggle('hidden', state.risks.length > 0);
+            if (state.risks.length) await selecionarRisco(String(state.risks[0].idRisco));
+            else limparPainelRisco();
+        } catch (error) {
+            showMessage(`Não foi possível carregar os riscos: ${error.message}`);
+        }
+    }
+
+    function limparPainelRisco() {
+        state.selectedRisk = null;
+        state.context = null;
+        state.prr = null;
+        state.opinions = [];
+        document.getElementById('risk-details').replaceChildren();
+        document.getElementById('context-details').replaceChildren();
+        document.getElementById('prr-details').replaceChildren();
+        document.getElementById('opinion-history').replaceChildren();
+        document.getElementById('monitor-details').replaceChildren();
+        renderRiskMatrix(document.getElementById('risk-matrix'), state.risks, null);
+        renderizarMonitoramento();
+        atualizarFluxo();
+    }
+
+    async function selecionarRisco(id) {
+        limparPainelRisco();
+        state.selectedRisk = state.risks.find(risk => String(risk.idRisco) === String(id)) || null;
+        if (!state.selectedRisk) return;
+        const risk = state.selectedRisk;
+        const details = document.getElementById('risk-details');
+        const probability = Number(risk.probabilidade.nota);
+        const impact = Number(risk.impacto.nota);
+        const validScale = Number.isInteger(probability) && probability >= 1 && probability <= 5
+            && Number.isInteger(impact) && impact >= 1 && impact <= 5;
+        const score = validScale ? probability * impact : null;
+        [
+            ['Identificador', risk.idRisco],
+            ['Descrição', risk.descricao],
+            ['Setor', risk.setor],
+            ['Categoria', risk.categoria],
+            ['Probabilidade', `${risk.probabilidade.rotulo} (${risk.probabilidade.nota})`],
+            ['Impacto', `${risk.impacto.rotulo} (${risk.impacto.nota})`],
+            ['Nível (probabilidade × impacto)', score ?? 'Notas inválidas'],
+            ['Horizonte (meses)', risk.horizonteMeses],
+            ['Criado por', risk.criadoPor],
+            ['Criado em', risk.criadoEm]
+        ].forEach(([label, value]) => addText(details, label, value, 'rounded-lg bg-slate-50 p-3 text-sm'));
+        const scoreWarning = document.getElementById('risk-score-warning');
+        scoreWarning.classList.toggle('hidden', validScale && Number(risk.nivel) === score);
+        if (!validScale) {
+            scoreWarning.textContent = 'A API retornou nota de probabilidade ou impacto fora da escala MGR de 1 a 5.';
+        } else if (Number(risk.nivel) !== score) {
+            scoreWarning.textContent = `A API informou nível ${risk.nivel}, mas as notas resultam em ${score} (${risk.probabilidade.nota} × ${risk.impacto.nota}). Confira o registro antes de usá-lo como referência.`;
+        }
+        renderRiskMatrix(document.getElementById('risk-matrix'), state.risks, risk.idRisco);
+        atualizarFluxo();
+        await carregarContexto(risk.idRisco);
+    }
+
+    async function carregarContexto(idRisco) {
+        const details = document.getElementById('context-details');
+        details.textContent = 'Carregando contexto...';
+        try {
+            state.context = await apiRequest(`/contexto/risco/${encodeURIComponent(idRisco)}`);
+            details.replaceChildren();
+            addText(details, 'Contexto', state.context.idContexto, 'font-semibold');
+            addText(details, 'Escopo', state.context.escopo, 'mt-2');
+            addText(details, 'Criado em', state.context.criadoEm, 'mt-1 text-slate-600');
+
+            const stages = document.createElement('ul');
+            stages.className = 'mt-3 space-y-2';
+            (state.context.etapas || []).forEach(stage => {
+                const item = document.createElement('li');
+                item.className = 'rounded-lg border border-slate-200 p-3 text-sm';
+                item.textContent = `${stage.etapa} · ${stage.status ? `concluída em ${stage.concluidoEm}` : `pendente · prazo ${stage.prazo}`}`;
+                stages.appendChild(item);
+            });
+            details.appendChild(stages);
+            renderizarMonitoramento();
+            atualizarFluxo();
+            await carregarPrr(state.context.idContexto);
+        } catch (error) {
+            details.textContent = '';
+            if (error.status === 404) {
+                state.context = null;
+                state.prr = null;
+                details.textContent = 'Ainda não há contexto cadastrado para este risco.';
+                document.getElementById('prr-details').textContent = 'O PRR estará disponível após o cadastro do contexto.';
+                document.getElementById('opinion-history').replaceChildren();
+                renderizarMonitoramento();
+                atualizarFluxo();
+                return;
+            }
+            showMessage(`Não foi possível carregar o contexto: ${error.message}`);
+        }
+    }
+
+    async function carregarPrr(idContexto) {
+        const details = document.getElementById('prr-details');
+        details.textContent = 'Carregando PRR...';
+        try {
+            state.prr = await apiRequest(`/prr/contexto/${encodeURIComponent(idContexto)}`);
+            details.replaceChildren();
+            [
+                ['Identificador', state.prr.idResposta],
+                ['Status', state.prr.status],
+                ['Tratamento', state.prr.tratamento],
+                ['Parâmetro', state.prr.parametro],
+                ['Responsáveis', state.prr.nomeResponsaveis],
+                ['Controles existentes', state.prr.controlesExistentes],
+                ['Ação proposta', state.prr.acaoProposta],
+                ['Métricas', state.prr.metricas]
+            ].forEach(([label, value]) => addText(details, label, value, 'break-words'));
+            renderizarMonitoramento();
+            atualizarFluxo();
+            if (state.role === 'CSGR') await carregarPareceres();
+        } catch (error) {
+            state.prr = null;
+            document.getElementById('opinion-history').replaceChildren();
+            if (error.status === 404) {
+                details.textContent = 'Ainda não há Plano de Resposta cadastrado para este contexto.';
+                renderizarMonitoramento();
+                atualizarFluxo();
+                return;
+            }
+            details.textContent = `Não foi possível carregar o PRR: ${error.message}`;
+        }
+    }
+
+    function renderizarMonitoramento() {
+        const container = document.getElementById('monitor-details');
+        if (!container) return;
+        container.replaceChildren();
+
+        const etapas = state.context?.etapas || [];
+        const concluidas = etapas.filter(etapa => Boolean(etapa.status)).length;
+        const now = new Date();
+        const hoje = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+        const atrasadas = etapas.filter(etapa =>
+            !etapa.status && etapa.prazo && String(etapa.prazo).slice(0, 10) < hoje
+        );
+        const values = [
+            ['Cronograma', etapas.length
+                ? `${concluidas} de ${etapas.length} etapa(s) concluída(s); ${etapas.length - concluidas} pendente(s).`
+                : 'Nenhuma etapa de cronograma cadastrada no contexto.'],
+            ['Prazos vencidos', atrasadas.length
+                ? atrasadas.map(etapa => `${etapa.etapa} (prazo ${etapa.prazo})`).join('; ')
+                : 'Nenhuma etapa pendente com prazo vencido.'],
+            ['Métricas previstas no PRR', state.prr?.metricas || 'Não definidas no plano de resposta.'],
+            ['Parâmetro de acompanhamento', state.prr?.parametro || 'Disponível após o cadastro do PRR.'],
+            ['Responsáveis pelo acompanhamento', state.prr?.nomeResponsaveis || 'Disponíveis após o cadastro do PRR.']
+        ];
+
+        values.forEach(([title, value]) => {
+            const card = document.createElement('article');
+            card.className = 'phase-summary';
+            const heading = document.createElement('h3');
+            heading.textContent = title;
+            const description = document.createElement('p');
+            description.textContent = value;
+            card.append(heading, description);
+            container.appendChild(card);
+        });
+    }
+
+    async function carregarPareceres() {
+        if (!state.prr) return;
+        try {
+            const opinions = await apiRequest(`/parecer/prr/${encodeURIComponent(state.prr.idResposta)}`);
+            state.opinions = opinions;
+            const history = document.getElementById('opinion-history');
+            history.replaceChildren();
+            if (!opinions.length) {
+                addText(history, '', 'A API não retornou pareceres para este PRR.', 'text-sm text-slate-500');
+            }
+
+            opinions.forEach(opinion => {
+                const item = document.createElement('article');
+                item.className = 'rounded-lg border border-slate-200 p-3 text-sm';
+                addText(item, '', `${opinion.statusResultado} · ${opinion.nomeAvaliador} · ${opinion.avaliadoEm}`, 'font-semibold');
+                addText(item, '', opinion.parecerTexto, 'mt-1');
+                history.appendChild(item);
+            });
+            atualizarFluxo();
+        } catch (error) {
+            showMessage(`Não foi possível carregar os pareceres: ${error.message}`);
+        }
+    }
+
+    async function registrarParecer(event) {
+        event.preventDefault();
+        if (!state.prr) {
+            showMessage('Selecione um risco com PRR antes de registrar um parecer.');
+            return;
+        }
+        try {
+            await apiRequest('/parecer', {
+                method: 'POST',
+                body: JSON.stringify({
+                    idResposta: state.prr.idResposta,
+                    statusResultado: document.getElementById('opinion-status').value,
+                    parecerTexto: document.getElementById('opinion-text').value.trim()
+                })
+            });
+            document.getElementById('opinion-text').value = '';
+            await carregarPareceres();
+            showMessage('Parecer registrado.', 'success');
+        } catch (error) {
+            showMessage(`Não foi possível registrar o parecer: ${error.message}`);
+        }
+    }
+
+    function fazerLogout() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('usuarioLogado');
+        window.location.replace('/login.html');
+    }
+
+    init();
+</script>
+</body>
+</html>

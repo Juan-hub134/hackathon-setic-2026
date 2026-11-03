@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSGR · Solicitações diretas | MGR SETIC</title>
+    <link rel="stylesheet" href="/app.css">
+    <script src="/api.js"></script>
+    <script src="/risk-matrix.js"></script>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800">
+<header class="app-header text-white shadow">
+    <div class="app-header-inner flex flex-wrap items-center justify-between gap-4 px-4 py-4">
+        <div>
+            <h1 class="text-lg font-bold">SETIC · Área CSGR</h1>
+            <p id="user-context" class="text-xs text-slate-300">Validando acesso...</p>
+        </div>
+        <button type="button" onclick="fazerLogout()" class="rounded-lg border border-slate-600 px-3 py-2 text-xs font-semibold hover:bg-slate-800">Sair</button>
+    </div>
+</header>
+
+<main class="app-main space-y-6 px-4">
+    <section class="page-intro">
+        <p class="page-eyebrow">Acesso da comissão · fluxo iniciado pelo titular</p>
+        <h2 class="page-title">Solicitações diretas para análise</h2>
+        <p class="page-description">A CSGR só recebe PRRs que um titular encaminhou com justificativa. Esta tela não exibe uma lista geral de riscos nem usa registros fictícios.</p>
+    </section>
+
+    <div id="page-message" role="status" aria-live="polite" class="hidden rounded-lg border px-4 py-3 text-sm"></div>
+
+    <section class="grid gap-6 lg:grid-cols-[minmax(16rem,0.8fr)_minmax(0,1.2fr)]">
+        <div class="app-panel rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <p class="page-eyebrow">Fila da comissão</p>
+                    <h2 class="font-bold">Solicitações pendentes</h2>
+                </div>
+                <button type="button" id="refresh-requests" class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-50">Atualizar</button>
+            </div>
+            <div id="request-list" class="space-y-2" aria-live="polite"></div>
+            <p id="request-empty" class="hidden rounded-lg bg-slate-50 p-4 text-sm text-slate-600">Não há solicitações diretas pendentes. Quando um titular encaminhar um PRR, ele aparecerá aqui.</p>
+        </div>
+
+        <section class="app-panel rounded-xl border border-slate-200 bg-white p-5 shadow-sm" aria-labelledby="request-detail-title">
+            <p class="page-eyebrow">Análise da solicitação</p>
+            <h2 id="request-detail-title" class="font-bold">Selecione uma solicitação</h2>
+            <div id="request-details" class="mt-4 space-y-3 text-sm text-slate-700">
+                <p class="text-slate-500">O formulário de parecer será habilitado somente para um PRR pendente encaminhado por um titular.</p>
+            </div>
+            <section id="request-matrix-panel" class="hidden mt-4" aria-labelledby="request-matrix-title">
+                <h3 id="request-matrix-title" class="mb-2 text-sm font-semibold">Classificação na matriz 5 × 5</h3>
+                <div id="request-matrix" class="risk-matrix-content"></div>
+            </section>
+            <form id="opinion-form" class="hidden mt-5 space-y-3 border-t border-slate-200 pt-4">
+                <label for="opinion-status" class="block text-xs font-semibold">Resultado da análise
+                    <select id="opinion-status" required class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
+                        <option value="APROVADO">Aprovado</option>
+                        <option value="REPROVADO">Reprovado</option>
+                    </select>
+                </label>
+                <label for="opinion-text" class="block text-xs font-semibold">Parecer fundamentado
+                    <textarea id="opinion-text" required maxlength="4000" rows="5" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Registre a análise e os fundamentos da decisão."></textarea>
+                </label>
+                <button class="rounded-lg bg-indigo-700 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-800">Registrar parecer e concluir solicitação</button>
+            </form>
+        </section>
+    </section>
+</main>
+
+<script>
+    const state = {
+        token: localStorage.getItem('token'),
+        user: null,
+        requests: [],
+        selected: null
+    };
+
+    function decodeJwt(token) {
+        const part = token?.split('.')[1];
+        if (!part) throw new Error('Token inválido.');
+        const base64 = part.replace(/-/g, '+').replace(/_/g, '/');
+        return JSON.parse(new TextDecoder().decode(
+            Uint8Array.from(atob(base64), character => character.charCodeAt(0))
+        ));
+    }
+
+    function normalizeRole(role) {
+        const value = String(role || '').normalize('NFD').replace(/\p{M}/gu, '')
+            .toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_|_$/g, '');
+        return { GESTOR_DE_RISCO: 'GESTOR_RISCO', RESPONSAVEL_PELO_PRR: 'RESPONSAVEL_PRR' }[value] || value;
+    }
+
+    function showMessage(message, type = 'error') {
+        const banner = document.getElementById('page-message');
+        banner.textContent = message;
+        banner.className = `rounded-lg border px-4 py-3 text-sm ${type === 'error'
+            ? 'border-rose-200 bg-rose-50 text-rose-800'
+            : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`;
+        banner.classList.remove('hidden');
+    }
+
+    function fazerLogout() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('usuarioLogado');
+        window.location.replace('/login.html');
+    }
+
+    function addDetail(parent, label, value) {
+        const item = document.createElement('div');
+        item.className = 'rounded-lg bg-slate-50 p-3';
+        const title = document.createElement('p');
+        title.className = 'text-[11px] font-semibold uppercase text-slate-500';
+        title.textContent = label;
+        const content = document.createElement('p');
+        content.className = 'mt-1 break-words font-medium text-slate-800';
+        content.textContent = value == null || value === '' ? 'Não informado' : String(value);
+        item.append(title, content);
+        parent.appendChild(item);
+    }
+
+    function renderSolicitacoes() {
+        const list = document.getElementById('request-list');
+        list.replaceChildren();
+        const pending = state.requests.filter(request => request.status === 'PENDENTE');
+        document.getElementById('request-empty').classList.toggle('hidden', pending.length > 0);
+
+        pending.forEach(request => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'w-full rounded-lg border px-3 py-3 text-left transition hover:border-indigo-400 hover:bg-indigo-50';
+            if (state.selected?.idSolicitacao === request.idSolicitacao) {
+                button.classList.add('border-indigo-500', 'bg-indigo-50');
+            } else {
+                button.classList.add('border-slate-200');
+            }
+            const heading = document.createElement('span');
+            heading.className = 'block text-sm font-semibold text-slate-800';
+            heading.textContent = `${request.setor} · PRR #${request.idResposta}`;
+            const summary = document.createElement('span');
+            summary.className = 'mt-1 block text-xs text-slate-600';
+            summary.textContent = `Solicitado por ${request.nomeSolicitante} · ${request.solicitadoEm}`;
+            button.append(heading, summary);
+            button.addEventListener('click', () => selecionarSolicitacao(request));
+            list.appendChild(button);
+        });
+    }
+
+    function selecionarSolicitacao(request) {
+        state.selected = request;
+        renderSolicitacoes();
+        const details = document.getElementById('request-details');
+        details.replaceChildren();
+        addDetail(details, 'Risco', `#${request.idRisco} · ${request.descricaoRisco}`);
+        addDetail(details, 'Setor solicitante', request.setor);
+        addDetail(details, 'Probabilidade', `${request.probabilidade.rotulo} (${request.probabilidade.nota})`);
+        addDetail(details, 'Impacto', `${request.impacto.rotulo} (${request.impacto.nota})`);
+        addDetail(details, 'Nível calculado', `${request.probabilidade.nota} × ${request.impacto.nota} = ${request.probabilidade.nota * request.impacto.nota}`);
+        addDetail(details, 'Titular', request.nomeSolicitante);
+        addDetail(details, 'Motivo do encaminhamento', request.motivo);
+        addDetail(details, 'PRR', `#${request.idResposta} · ${request.statusPrr}`);
+        addDetail(details, 'Escopo do contexto', request.escopo);
+        addDetail(details, 'Estratégia de tratamento', request.tratamento);
+        addDetail(details, 'Parâmetro', request.parametro);
+        addDetail(details, 'Responsáveis', request.nomeResponsaveis);
+        addDetail(details, 'Controles existentes', request.controlesExistentes);
+        addDetail(details, 'Ação proposta', request.acaoProposta);
+        addDetail(details, 'Métricas', request.metricas);
+        addDetail(details, 'Solicitado em', request.solicitadoEm);
+        document.getElementById('request-matrix-panel').classList.remove('hidden');
+        renderRiskMatrix(document.getElementById('request-matrix'), [{
+            idRisco: request.idRisco,
+            descricao: request.descricaoRisco,
+            probabilidade: request.probabilidade,
+            impacto: request.impacto
+        }], request.idRisco);
+        document.getElementById('request-detail-title').textContent = `Análise do PRR #${request.idResposta}`;
+        document.getElementById('opinion-form').classList.toggle('hidden', request.statusPrr !== 'PENDENTE');
+    }
+
+    async function carregarSolicitacoes() {
+        const refresh = document.getElementById('refresh-requests');
+        refresh.disabled = true;
+        try {
+            state.requests = await apiRequest('/csgr/solicitacoes/pendentes');
+            const currentId = state.selected?.idSolicitacao;
+            state.selected = state.requests.find(request => request.idSolicitacao === currentId) || null;
+            renderSolicitacoes();
+            if (state.selected) {
+                selecionarSolicitacao(state.selected);
+            } else {
+                document.getElementById('request-detail-title').textContent = 'Selecione uma solicitação';
+                const note = document.createElement('p');
+                note.className = 'text-slate-500';
+                note.textContent = 'Selecione uma solicitação da fila para consultar o contexto e registrar o parecer.';
+                document.getElementById('request-details').replaceChildren(note);
+                document.getElementById('request-matrix-panel').classList.add('hidden');
+                document.getElementById('opinion-form').classList.add('hidden');
+            }
+        } catch (error) {
+            showMessage(`Não foi possível carregar as solicitações: ${error.message}`);
+        } finally {
+            refresh.disabled = false;
+        }
+    }
+
+    document.getElementById('refresh-requests').addEventListener('click', carregarSolicitacoes);
+    document.getElementById('opinion-form').addEventListener('submit', async event => {
+        event.preventDefault();
+        if (!state.selected || state.selected.status !== 'PENDENTE') {
+            showMessage('Selecione uma solicitação ainda pendente.');
+            return;
+        }
+        try {
+            await apiRequest('/parecer', {
+                method: 'POST',
+                body: JSON.stringify({
+                    idResposta: state.selected.idResposta,
+                    statusResultado: document.getElementById('opinion-status').value,
+                    parecerTexto: document.getElementById('opinion-text').value.trim()
+                })
+            });
+            document.getElementById('opinion-form').reset();
+            state.selected = null;
+            showMessage('Parecer registrado e solicitação concluída.', 'success');
+            await carregarSolicitacoes();
+        } catch (error) {
+            showMessage(`Não foi possível registrar o parecer: ${error.message}`);
+        }
+    });
+
+    async function init() {
+        if (!state.token) {
+            window.location.replace('/login.html?access=csgr');
+            return;
+        }
+        try {
+            state.user = decodeJwt(state.token);
+        } catch {
+            fazerLogout();
+            return;
+        }
+        if (normalizeRole(state.user.scope) !== 'CSGR') {
+            const role = normalizeRole(state.user.scope);
+            const destinations = {
+                GESTOR_RISCO: '/index.html',
+                RESPONSAVEL_PRR: '/index.html',
+                CGGE: '/gestor.html'
+            };
+            window.location.replace(destinations[role] || '/login.html?access=csgr');
+            return;
+        }
+        document.getElementById('user-context').textContent =
+            `${state.user.setor || 'Comissão de Segurança e Gestão de Riscos'} · CSGR`;
+        await carregarSolicitacoes();
+    }
+
+    init();
+</script>
+</body>
+</html>

@@ -1,11 +1,11 @@
 package br.com.hackathon.setic.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
@@ -17,11 +17,24 @@ import java.util.Base64;
 
 @Service
 public class RsaKeyService {
+    private final Path privateKeyPath;
+    private final Path publicKeyPath;
+
+    public RsaKeyService(
+            @Value("${app.security.jwt.private-key:src/main/resources/keys/private_key.pem}") String privateKeyPath,
+            @Value("${app.security.jwt.public-key:src/main/resources/keys/public_key.pem}") String publicKeyPath) {
+        this.privateKeyPath = Path.of(privateKeyPath);
+        this.publicKeyPath = Path.of(publicKeyPath);
+    }
 
     public RSAPrivateKey carregarPrivateKey() {
         try {
+<<<<<<< Updated upstream
             Path path = Paths.get("/home/peter/Documents/Faculdade/4º Período/Desenvolvimento WEB/typescript/hackathon-setic-2026/src/main/resources/keys/private_key.pem");
             String key = Files.readString(path);
+=======
+            String key = Files.readString(privateKeyPath);
+>>>>>>> Stashed changes
             key = key.replaceAll("-----BEGIN[^-]+-----", "")
                     .replaceAll("-----END[^-]+-----", "")
                     .replaceAll("[^A-Za-z0-9+/=]", "");
@@ -36,8 +49,12 @@ public class RsaKeyService {
 
     public RSAPublicKey carregarPublicKey() {
         try {
+<<<<<<< Updated upstream
             Path path = Paths.get("/home/peter/Documents/Faculdade/4º Período/Desenvolvimento WEB/typescript/hackathon-setic-2026/src/main/resources/keys/public_key.pem");
             String key = Files.readString(path);
+=======
+            String key = Files.readString(publicKeyPath);
+>>>>>>> Stashed changes
             key = key.replaceAll("-----BEGIN[^-]+-----", "")
                     .replaceAll("-----END[^-]+-----", "")
                     .replaceAll("[^A-Za-z0-9+/=]", "");

@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 # MGR - Sistema de Gestão de Riscos (SETIC - Hackathon 2026)
 
 Este projeto é um sistema web para **Gestão de Riscos Institucionais (MGR)** desenvolvido para a **SETIC (Superintendência Estadual de Tecnologia da Informação e Comunicação)** durante o Hackathon 2026. A aplicação combina um backend robusto em **Java 27 / Spring Boot** com persistência em **PostgreSQL**, autenticação via **JWT (RSA256)** e um frontend estático integrado.
@@ -11,143 +12,136 @@ Este projeto é um sistema web para **Gestão de Riscos Institucionais (MGR)** d
 - **PostgreSQL 16+**
 - **JWT (JSON Web Token)** com par de chaves **RSA256**
 - **HTML5, Tailwind CSS, Lucide Icons e JavaScript (Fetch API)**
+=======
+# API de Gestão de Riscos - SETIC Hackathon 2026
 
----
+Aplicação de gestão de riscos baseada no Modelo de Gestão de Riscos (MGR), com
+interface web servida pelo Spring Boot e persistência em PostgreSQL.
 
-## Pré-requisitos para Rodar em Outra Máquina
+## Requisitos
 
-Antes de iniciar, certifique-se de ter instalado na máquina de destino:
+- JDK 21 ou superior.
+- PostgreSQL 16 ou superior em execução.
+- OpenSSL para gerar as chaves JWT locais.
+- Acesso à internet na primeira execução do Maven Wrapper (`./mvnw`).
+>>>>>>> Stashed changes
 
-1. **JDK 27** (ou versão compatível configurada no `JAVA_HOME`).
-2. **Maven 3.8+** (ou o wrapper `./mvnw` do projeto).
-3. **PostgreSQL 16+** com o serviço ativo na porta `5432`.
-4. **OpenSSL** (para geração do par de chaves RSA).
+## Executar localmente
 
----
+### 1. Preparar o banco
 
-## Passo a Passo para Configuração
+O backend valida o esquema existente (`ddl-auto=validate`) e não cria ou altera
+tabelas automaticamente. A inicialização de scripts SQL também está desativada.
 
-### 1. Clonar o Repositório
-```bash
-git clone <URL_DO_REPOSITORIO>
-cd hackathon-setic-2026
-```
-
----
-
-### 2. Configurar o Banco de Dados (PostgreSQL)
-
-1. Crie o banco de dados `postgres` (ou utilize o banco padrão da sua instalação local).
-2. Execute o arquivo de dump SQL (`schema_hackaton.sql`) no seu PostgreSQL (via **pgAdmin** ou CLI):
+Para criar um banco local separado e restaurar nele o backup SQL:
 
 ```bash
-psql -U postgres -d postgres -f schema_hackaton.sql
+export PGUSER=postgres
+export PGPASSWORD='senha_do_postgres'
+./scripts/restore-local-db.sh "/caminho/para/backup-pedro-plain.sql"
 ```
 
-3. **Inserção do Usuário Inicial (MANDATÓRIO):**
-   Como as tabelas estarão sem dados por padrão, execute o seguinte script no PostgreSQL para criar o setor, cargo e um usuário válido para autenticação no sistema:
+O script cria somente um banco novo chamado `hackathon_setic_local` (ou o nome
+opcional informado como segundo argumento), recusa sobrescrever banco existente
+e não modifica o backup. Durante a importação, remove apenas diretivas de dump
+gerado pelo PostgreSQL 18 incompatíveis com PostgreSQL 16. Use uma conta com
+permissão para criar banco e, no restore, para definir o proprietário `postgres`.
 
-```sql
--- 1. Criação do Setor inicial
-INSERT INTO public.setor (id_setor, unidades, sigla, unidade) 
-VALUES (1, 'Coordenadoria de Teste', 'Cote', 'SETIC')
-ON CONFLICT (id_setor) DO NOTHING;
+Se preferir usar um banco que já existe no pgAdmin, pule a restauração e configure
+`DB_URL` para apontar para ele. O banco deve conter o esquema compatível com as
+entidades da aplicação.
 
--- 2. Criação do Cargo inicial
-INSERT INTO public.cargo (id_cargo, cargo, descricao) 
-VALUES (1, 'Cadastrador', 'Responsável por cadastrar e gerenciar riscos')
-ON CONFLICT (id_cargo) DO NOTHING;
-
--- 3. Criação do Usuário padrão para login
-INSERT INTO public.usuario (id_usuario, nome, email, senha, id_setor, id_cargo, ativo) 
-VALUES (1, 'Adm da Silva', 'emaildeadm@setic.ro.gov.br', 'senha123', 1, 1, true)
-ON CONFLICT (id_usuario) DO NOTHING;
-```
-
----
-
-### 3. Configurar a Pasta `src/main/resources` e Credenciais
-
-
-1. Crie o diretório `src/main/resources` no projeto, se ele não existir.
-2. Crie o arquivo `src/main/resources/application.properties` com o seguinte conteúdo:
-
-```properties
-spring.application.name=hackathon-setic-2026
-server.port=8080
-
-# Configuração do PostgreSQL
-spring.datasource.url=jdbc:postgresql://localhost:5432/postgres
-spring.datasource.username=postgres
-spring.datasource.password=SUA_SENHA_AQUI
-spring.datasource.driver-class-name=org.postgresql.Driver
-
-# Configuração do JPA / Hibernate
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
-
-# Inicialização do Script SQL (opcional)
-spring.sql.init.mode=always
-```
-
----
-
-### 4. Gerar as Chaves RSA256 de Segurança
-
-A autenticação do sistema utiliza chaves RSA256. É obrigatório ter as chaves **`private_key.pem`** e **`public_key.pem`** na **raiz do projeto** (`/hackathon-setic-2026/`).
-
-Gere as chaves executando os seguintes comandos no terminal, dentro da pasta raiz do projeto:
+Para habilitar as solicitações diretas do titular à CSGR, aplique a migração
+aditiva antes de iniciar a aplicação (o Hibernate valida o esquema, mas não cria
+tabelas):
 
 ```bash
-# 1. Gera a chave privada RSA (2048 bits)
-openssl genpkey -algorithm RSA -out private_key.pem -pkeyopt rsa_keygen_bits:2048
-
-# 2. Extrai a chave pública correspondente
-openssl rsa -pubout -in private_key.pem -out public_key.pem
+psql -h localhost -U postgres -d hackathon_setic_local -f scripts/migration-add-csgr-solicitacoes.sql
 ```
 
----
+Troque o nome do banco se `DB_URL` apontar para outro banco. A migração cria
+somente a tabela de solicitações e seu índice de pendências; ela não altera riscos,
+PRRs ou pareceres existentes.
 
-### 5. Configurar os Arquivos Estáticos (Frontend)
+Para popular o banco configurado com cenários fictícios de teste do MGR:
 
-Para que a interface web seja servida diretamente pelo servidor Spring Boot:
-
-1. Crie a pasta `src/main/resources/static/`.
-2. Certifique-se de que os arquivos da interface estejam nessa pasta:
-   - `src/main/resources/static/login.html` (Tela de autenticação) - REQUISITAR AO PEDRO PRA ENVIAR, ELE FICOU COM PREGUIÇA DE AJUSTAR DE IMEDIATO
-   - `src/main/resources/static/index.html` (Dashboard do MGR) - IDEM DE CIMA
-
----
-
-## Como Executar o Projeto
-
-### Via Terminal (Maven)
 ```bash
-mvn clean package
+python3 scripts/seed-mgr-test-data.py --dry-run
+python3 scripts/seed-mgr-test-data.py
+```
+
+A carga cria riscos, contextos, etapas de roadmap, PRRs e pareceres marcados
+`TESTE_MGR`, seguindo o modelo causa–evento–impacto–objetivo e o cálculo
+probabilidade × impacto. Ela é aditiva e idempotente: não atualiza nem exclui
+registros existentes; pode ser executada novamente sem duplicar os cenários.
+Confira `DB_URL` no `.env` antes de executar.
+
+### 2. Configurar a conexão PostgreSQL
+
+Informe a senha por variável de ambiente; não a grave no código:
+
+```bash
+export DB_USERNAME=postgres
+export DB_PASSWORD='senha_do_postgres'
+# Opcional se usar um banco diferente:
+export DB_URL='jdbc:postgresql://localhost:5432/nome_do_banco'
+```
+
+No PowerShell, defina `$env:DB_USERNAME`, `$env:DB_PASSWORD` e, se necessário,
+`$env:DB_URL`. O valor padrão de `DB_URL` aponta para `hackathon_setic_local`.
+A porta HTTP pode ser alterada com `PORT` (padrão `8080`).
+
+Para iniciar pelo botão **Run** do IntelliJ, crie um arquivo `.env` na raiz do
+repositório (não uma pasta chamada `.env`), copiando `.env.example`, e substitua
+`DB_PASSWORD` pela senha usada no pgAdmin.
+O arquivo `.env` é ignorado pelo Git. Confirme que o **Working directory** da
+configuração da aplicação aponta para a raiz do projeto; o IntelliJ não herda
+automaticamente variáveis exportadas em outro terminal.
+
+### 3. Gerar as chaves JWT locais
+
+O login usa chaves RSA. Gere o par em `src/main/resources/keys`; essa pasta é
+ignorada pelo Git:
+
+```bash
+mkdir -p src/main/resources/keys
+openssl genpkey -algorithm RSA -out src/main/resources/keys/private_key.pem -pkeyopt rsa_keygen_bits:2048
+openssl rsa -pubout -in src/main/resources/keys/private_key.pem -out src/main/resources/keys/public_key.pem
+```
+
+As chaves são carregadas do sistema de arquivos, sem caminho absoluto de máquina. Se já
+houver um par válido nesse diretório, não o substitua: trocar as chaves invalida
+os tokens anteriormente emitidos. As chaves privadas ficam fora do JAR. Se a
+aplicação for iniciada de outro diretório, configure `JWT_PRIVATE_KEY` e
+`JWT_PUBLIC_KEY` com os caminhos dos dois arquivos.
+
+### 4. Iniciar
+
+Na raiz do repositório, para informar a senha interativamente sem exibi-la:
+
+```bash
+./scripts/run-local.sh
+```
+
+O script usa `hackathon_setic_local` por padrão. Para selecionar outro banco ou
+usuário, defina `DB_URL` e `DB_USERNAME` antes de iniciar. Também é possível
+configurar `DB_PASSWORD` previamente, sem que o script solicite a senha.
+
+Também é possível configurar `DB_URL`, `DB_USERNAME` e `DB_PASSWORD` em
+**Run > Edit Configurations > Environment variables**.
+
+Para criar e executar o JAR:
+
+```bash
+./mvnw clean package
 java -jar target/hackathon-setic-2026-0.0.1-SNAPSHOT.jar
 ```
 
-### Via IntelliJ IDEA
-1. Abra a pasta do projeto no IntelliJ IDEA.
-2. Aguarde a importação das dependências do Maven.
-3. Abra a classe principal: `br.com.hackathon.setic.HackathonSetic2026Application.java`.
-4. Clique no ícone de **Play** (ou pressione `Shift + F10`).
+Abra `http://localhost:8080/login.html` e autentique-se com uma conta cadastrada
+no banco configurado. Não há usuário ou senha de demonstração criado pela aplicação.
+O cargo cadastrado determina o painel para o qual o login redireciona.
 
----
-
-## Como Acessar a Aplicação
-
-Com o backend em execução na porta `8080`:
-
-1. Abra o navegador e acesse: **`http://localhost:8080/login.html`**
-2. **Credenciais Padrão de Teste:**
-   - **E-mail:** `emaildeadm@setic.ro.gov.br`
-   - **Senha:** `senha123`
-3. Após o login bem-sucedido, o sistema armazenará a sessão e redirecionará automaticamente para o painel principal (`http://localhost:8080/index.html`).
-
----
-
+<<<<<<< Updated upstream
 ## Principais Endpoints da API
 
 | Método | Endpoint | Descrição |
@@ -166,3 +160,20 @@ Com o backend em execução na porta `8080`:
   Verifique se o usuário, senha e porta no `application.properties` correspondem à sua instância local do PostgreSQL.
 - **Erro de Chave Estrangeira `fk_cargo_usuario`:**
   Garantir que a coluna `id_cargo` na tabela `usuario` seja do tipo `bigint` e não `varchar`.
+=======
+## Arquitetura
+
+```text
+src/main/java/br/com/hackathon/setic/
+├── config/       # Segurança, JWT e configurações
+├── controller/   # Endpoints REST
+├── dto/          # Contratos de requisição e resposta
+├── model/        # Entidades JPA
+├── repository/   # Acesso a dados
+└── service/      # Regras de negócio
+```
+
+Os HTML em `src/main/resources/static/` usam os endpoints em `/api/v1` para
+consultar e atualizar riscos, contextos, PRRs e pareceres, conforme o cargo
+autenticado.
+>>>>>>> Stashed changes

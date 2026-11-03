@@ -20,7 +20,12 @@ target/
 *.ipr
 
 ### CONFIGURAÇÕES DO PROJETO (CHAVES E SENHAS) ###
-src/main/resources/
+.env
+.env.backup/
+src/main/resources/*
+!src/main/resources/application.properties
+!src/main/resources/static/
+!src/main/resources/static/**
 
 ### NetBeans ###
 /nbproject/private/
