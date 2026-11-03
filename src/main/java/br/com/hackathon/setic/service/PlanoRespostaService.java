@@ -5,7 +5,9 @@ import br.com.hackathon.setic.dto.response.PlanoRespostaResponseDto;
 import br.com.hackathon.setic.model.*;
 import br.com.hackathon.setic.repository.*;
 import jakarta.transaction.Transactional;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 
@@ -89,8 +91,14 @@ public class PlanoRespostaService {
             }
         }
 
-        PlanoResposta prr = planoRespostaRepository.findByContextoId(idContexto)
-                .orElseThrow(() -> new RuntimeException("Plano de Resposta não encontrado para este contexto"));
+        Optional<PlanoResposta> prrOptional = planoRespostaRepository.findByContextoId(idContexto);
+        if (prrOptional.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Plano de Resposta não encontrado para este contexto"
+            );
+        }
+        PlanoResposta prr = prrOptional.get();
 
         return buildPlanoRespostaResponseDto(prr);
     }

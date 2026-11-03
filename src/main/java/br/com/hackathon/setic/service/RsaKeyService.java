@@ -1,5 +1,6 @@
 package br.com.hackathon.setic.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -18,10 +19,19 @@ import java.util.Base64;
 @Service
 public class RsaKeyService {
 
+    private final Path privateKeyPath;
+    private final Path publicKeyPath;
+
+    public RsaKeyService(
+            @Value("${rsa.private-key-path:src/main/resources/keys/private_key.pem}") String privateKeyPath,
+            @Value("${rsa.public-key-path:src/main/resources/keys/public_key.pem}") String publicKeyPath) {
+        this.privateKeyPath = Paths.get(privateKeyPath);
+        this.publicKeyPath = Paths.get(publicKeyPath);
+    }
+
     public RSAPrivateKey carregarPrivateKey() {
         try {
-            Path path = Paths.get("./private_key.pem");
-            String key = Files.readString(path);
+            String key = Files.readString(privateKeyPath);
             key = key.replaceAll("-----BEGIN[^-]+-----", "")
                     .replaceAll("-----END[^-]+-----", "")
                     .replaceAll("[^A-Za-z0-9+/=]", "");
@@ -36,8 +46,7 @@ public class RsaKeyService {
 
     public RSAPublicKey carregarPublicKey() {
         try {
-            Path path = Paths.get("./public_key.pem");
-            String key = Files.readString(path);
+            String key = Files.readString(publicKeyPath);
             key = key.replaceAll("-----BEGIN[^-]+-----", "")
                     .replaceAll("-----END[^-]+-----", "")
                     .replaceAll("[^A-Za-z0-9+/=]", "");

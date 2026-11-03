@@ -72,24 +72,20 @@ public class HistoricoService {
         historico.setTabela("risco");
         historico.setOperacao("REGISTRAR_RISCO");
         historico.setAlteradoEm(LocalDateTime.now());
-        historico.setCamposAlterados("todos");
-
-        historico.setAntes(
-                objectMapper.valueToTree(Map.of())
+        historico.setCamposAlterados(
+                "id_risco,id_categoria,probabilidade,impacto,nivel,horizonte_meses"
         );
+
+        historico.setAntes(null);
 
         historico.setDepois(
                 objectMapper.valueToTree(
                         Map.of(
                                 "id_risco", risco.getIdRisco(),
                                 "id_categoria", risco.getCategoria().getIdCategoria(),
-                                "causa", risco.getCausa(),
-                                "evento", risco.getEvento(),
-                                "impacto_txt", risco.getImpactoTxt(),
-                                "objetivo", risco.getObjetivo(),
-                                "descricao", risco.getDescricao(),
-                                "id_probabilidade", risco.getEscalaProbabilidade().getNota(),
-                                "id_impacto", risco.getEscalaImpacto().getNota(),
+                                "probabilidade", risco.getEscalaProbabilidade().getNota(),
+                                "impacto", risco.getEscalaImpacto().getNota(),
+                                "nivel", risco.getNivel(),
                                 "horizonte_meses", risco.getHorizonteMeses()
                         )
                 )

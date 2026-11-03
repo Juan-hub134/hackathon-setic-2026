@@ -16,8 +16,8 @@ Sistema de gestao de riscos baseado no Modelo de Gestao de Riscos (MGR), impleme
 
 Antes de iniciar, certifique-se de ter instalado na máquina de destino:
 
-1. **JDK 27** (ou versão compatível configurada no `JAVA_HOME`).
-2. **Maven 3.8+** (ou o wrapper `./mvnw` do projeto).
+1. **JDK 21 ou superior** configurado no `JAVA_HOME`. O Maven compila para Java 21.
+2. O **Maven Wrapper** do projeto (`mvnw.cmd` no Windows ou `./mvnw`).
 3. **PostgreSQL 16+** com o serviço ativo na porta `5432`.
 4. **OpenSSL** (para geração do par de chaves RSA).
 
@@ -66,47 +66,32 @@ ON CONFLICT (id_usuario) DO NOTHING;
 
 ### 3. Configurar a Pasta `src/main/resources` e Credenciais
 
-
-1. Crie o diretório `src/main/resources` no projeto, se ele não existir.
-2. Crie o arquivo `src/main/resources/application.properties` com o seguinte conteúdo:
+Crie `src/main/resources/application.properties` localmente (o arquivo está no `.gitignore`) e configure as propriedades com variáveis de ambiente, sem gravar credenciais no repositório:
 
 ```properties
-spring.application.name=hackathon-setic-2026
-server.port=8080
-
-# Configuração do PostgreSQL
-spring.datasource.url=jdbc:postgresql://localhost:5432/postgres
-spring.datasource.username=postgres
-spring.datasource.password=SUA_SENHA_AQUI
-spring.datasource.driver-class-name=org.postgresql.Driver
-
-# Configuração do JPA / Hibernate
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
-
-# Inicialização do Script SQL (opcional)
-spring.sql.init.mode=always
+spring.datasource.url=${SPRING_DATASOURCE_URL}
+spring.datasource.username=${SPRING_DATASOURCE_USERNAME}
+spring.datasource.password=${SPRING_DATASOURCE_PASSWORD}
+rsa.private-key-path=${RSA_PRIVATE_KEY_PATH:src/main/resources/keys/private_key.pem}
+rsa.public-key-path=${RSA_PUBLIC_KEY_PATH:src/main/resources/keys/public_key.pem}
 ```
+
+Gere ou forneça as chaves RSA localmente. Não versione `application.properties`, arquivos de chave nem credenciais reais.
 
 ---
 
 ### 4. Gerar as Chaves RSA256 de Segurança
 
-A autenticação do sistema utiliza chaves RSA256. É obrigatório ter as chaves **`private_key.pem`** e **`public_key.pem`** na **raiz do projeto** (`/hackathon-setic-2026/`).
-
-Gere as chaves executando os seguintes comandos no terminal, dentro da pasta raiz do projeto:
+A autenticação usa JWT RS256. Gere as chaves RSA de 2048 bits em `src/main/resources/keys/` (diretório ignorado pelo Git):
 
 ```bash
-# 1. Gera a chave privada RSA (2048 bits)
-openssl genpkey -algorithm RSA -out private_key.pem -pkeyopt rsa_keygen_bits:2048
-
-# 2. Extrai a chave pública correspondente
-openssl rsa -pubout -in private_key.pem -out public_key.pem
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out src/main/resources/keys/private_key.pem
+openssl pkey -in src/main/resources/keys/private_key.pem -pubout -out src/main/resources/keys/public_key.pem
 ```
 
----
+O serviço lê os caminhos das propriedades `rsa.private-key-path` e `rsa.public-key-path`, configuráveis com `RSA_PRIVATE_KEY_PATH` e `RSA_PUBLIC_KEY_PATH`. Os caminhos padrão são adequados para execução a partir da raiz do projeto; ao executar o JAR ou em outra máquina, configure as variáveis para apontar para arquivos externos. O Maven não inclui `keys/` no artefato.
 
+---
 ### 5. Configurar os Arquivos Estáticos (Frontend)
 
 Para que a interface web seja servida diretamente pelo servidor Spring Boot:
@@ -122,7 +107,7 @@ Para que a interface web seja servida diretamente pelo servidor Spring Boot:
 
 ### Via Terminal (Maven)
 ```bash
-mvn clean package
+.\mvnw.cmd clean package
 java -jar target/hackathon-setic-2026-0.0.1-SNAPSHOT.jar
 ```
 

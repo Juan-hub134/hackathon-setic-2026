@@ -6,12 +6,18 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 public class ConfigSecurity {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable())
+        http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         // Login público
                         .requestMatchers("/api/v1/login").permitAll()
@@ -46,10 +52,31 @@ public class ConfigSecurity {
                         .requestMatchers("/api/v1/parecer").hasAuthority("SCOPE_CSGR")
                         .requestMatchers("/api/v1/parecer/prr/{idResposta}").hasAnyAuthority("SCOPE_GESTOR_RISCO","SCOPE_CSGR","SCOPE_CGGE")
 
+                        // Histórico - acesso refinado por tabela e setor no service
+                        .requestMatchers("/api/v1/historico", "/api/v1/historico/**").hasAnyAuthority(
+                                "SCOPE_CSGR",
+                                "SCOPE_CGGE",
+                                "SCOPE_GESTOR_RISCO",
+                                "SCOPE_RESPONSAVEL_PRR"
+                        )
+
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> {}));
         return http.build();
+    }
+
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of("http://localhost:5500"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
     @Bean

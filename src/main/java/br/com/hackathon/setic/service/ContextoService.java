@@ -11,7 +11,9 @@ import br.com.hackathon.setic.repository.ContextoRepository;
 import br.com.hackathon.setic.repository.RiscoRepository;
 import br.com.hackathon.setic.repository.UsuarioRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -96,8 +98,14 @@ public class ContextoService {
             }
         }
 
-        Contexto contexto = contextoRepository.findByRiscoId(idRisco)
-                .orElseThrow(() -> new RuntimeException("Contexto não encontrado para este risco"));
+        Optional<Contexto> contextoOptional = contextoRepository.findByRiscoId(idRisco);
+        if (contextoOptional.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Contexto não encontrado para este risco"
+            );
+        }
+        Contexto contexto = contextoOptional.get();
 
         List<ContextoEtapa> etapas = contextoEtapaRepository.findByContextoId(contexto.getIdContexto());
 

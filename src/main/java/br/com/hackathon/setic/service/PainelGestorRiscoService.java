@@ -86,6 +86,7 @@ public class PainelGestorRiscoService {
                     .get("id_cargo")
                     .asLong();
             Usuario usuario = usuarioRepository.findById(idFuncionario).get();
+            long cargoAtual = usuario.getCargo().getIdCargo();
             Cargo cargo = cargoRepository.findById(cargoAnterior).get();
             usuario.setCargo(cargo);
             usuarioRepository.save(usuario);
@@ -94,7 +95,7 @@ public class PainelGestorRiscoService {
             historicoService.voltarAoCargoAntigo(
                     gestor,
                     usuario,
-                    usuario.getCargo().getIdCargo(),
+                    cargoAtual,
                     cargoAnterior
             );
         }else {

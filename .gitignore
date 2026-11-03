@@ -30,7 +30,9 @@ Desafios_Hackathon_SETIC_Oficial.md
 *.ipr
 
 ### CONFIGURAÇÕES DO PROJETO (CHAVES E SENHAS) ###
-src/main/resources/
+src/main/resources/application.properties
+src/main/resources/application-example.properties
+src/main/resources/keys/
 
 ### NetBeans ###
 /nbproject/private/

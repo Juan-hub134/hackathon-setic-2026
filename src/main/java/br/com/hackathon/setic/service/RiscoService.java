@@ -5,6 +5,7 @@ import br.com.hackathon.setic.dto.response.EscalaResponseDto;
 import br.com.hackathon.setic.dto.response.RiscoResponseDto;
 import br.com.hackathon.setic.model.*;
 import br.com.hackathon.setic.repository.*;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -34,6 +35,7 @@ public class RiscoService {
         this.setorRepository = setorRepository;
     }
 
+    @Transactional
     public void registrarRisco(RiscoRequestDto dto, String sub){
         long idPrr = Long.parseLong(sub);
         System.out.println("Objetivo recebido: " + dto.objetivo());
