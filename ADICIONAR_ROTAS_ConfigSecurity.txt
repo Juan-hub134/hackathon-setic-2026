@@ -1,8 +1,0 @@
-ADICIONAR estas linhas no ConfigSecurity.java
-
-Logo DEPOIS da linha 45 (.requestMatchers("/api/v1/prr/contexto/{idContexto}")...)
-ADICIONAR:
-
-                        // Parecer PRR - apenas CSGR avalia; todos visualizam historico
-                        .requestMatchers("/api/v1/parecer").hasAuthority("SCOPE_CSGR")
-                        .requestMatchers("/api/v1/parecer/prr/{idResposta}").hasAnyAuthority("SCOPE_GESTOR_RISCO","SCOPE_CSGR","SCOPE_CGGE")
